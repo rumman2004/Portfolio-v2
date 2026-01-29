@@ -49,7 +49,7 @@ const ContactPage = () => {
 
         try {
             const response = await contactsAPI.create(formData);
-            toast.success(response.data.message || 'Message sent successfully! Check your email for confirmation.');
+            toast.success(response.data.message || 'Message sent successfully!');
             setSubmitted(true);
             setFormData({
                 name: '',
@@ -213,13 +213,9 @@ const ContactPage = () => {
                                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
                                             <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" />
                                         </div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3">Message Sent!</h3>
-                                        <p className="text-sm sm:text-base text-[rgb(var(--text-secondary))] mb-2 max-w-xs mx-auto px-4">
-                                            Thank you for reaching out! I'll get back to you within 24 hours.
-                                        </p>
-                                        <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] flex items-center justify-center gap-2 px-4">
-                                            <Mail className="w-4 h-4" />
-                                            Check your email for confirmation
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-2">Message Sent!</h3>
+                                        <p className="text-sm sm:text-base text-[rgb(var(--text-secondary))] mb-6 max-w-xs mx-auto px-4">
+                                            Thank you for reaching out. I generally respond within 24 hours.
                                         </p>
                                     </motion.div>
                                 ) : (
