@@ -7,22 +7,19 @@ import {
     Calendar, MapPin, Award, Mail, Phone, Download,
     Briefcase, Code, User, ExternalLink, GraduationCap,
     Layers, Database, Server, Wrench, Cloud, Terminal,
-    ChevronLeft, ChevronRight,
-    Github, Linkedin, Twitter, Facebook, Instagram, Globe // Import Social Icons
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
+// IMPORT THE DEDICATED ICONS
+import { socialIconMap } from '../../components/icons/SocialIcons';
 import Loader from '../../components/ui/Loader';
 import { getSkillIcon } from '../../components/icons';
 
-//Helper for social icons
+// --- Updated Helper to use socialIconMap ---
 const getSocialIcon = (platform) => {
-    switch (platform.toLowerCase()) {
-        case 'github': return Github;
-        case 'linkedin': return Linkedin;
-        case 'twitter': case 'x': return Twitter;
-        case 'facebook': return Facebook;
-        case 'instagram': return Instagram;
-        default: return Globe;
-    }
+    // Try to find the icon in the map (case-insensitive)
+    const IconComponent = socialIconMap[platform.toLowerCase()];
+    // Fallback to GitHub or Globe if not found (matches Footer logic)
+    return IconComponent || socialIconMap.github;
 };
 
 // --- Neumorphic Styles Helper ---
@@ -89,12 +86,12 @@ const NeuCategoryGroup = ({ group }) => {
 
 // --- Neumorphic Stat Component ---
 const NeuStat = ({ icon: Icon, value, label }) => (
-    <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-[rgb(var(--bg-primary))] shadow-[5px_5px_15px_rgba(0,0,0,0.2),-5px_-5px_15px_rgba(255,255,255,0.05)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.5),-5px_-5px_15px_rgba(255,255,255,0.02)] transition-transform hover:scale-105">
-        <div className="p-3 rounded-full bg-[rgb(var(--bg-secondary))] mb-3 text-[rgb(var(--accent))] shadow-inner">
-            <Icon className="w-6 h-6" />
+    <div className="flex flex-col items-center justify-center p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl bg-[rgb(var(--bg-primary))] shadow-[5px_5px_15px_rgba(0,0,0,0.2),-5px_-5px_15px_rgba(255,255,255,0.05)] dark:shadow-[5px_5px_15px_rgba(0,0,0,0.5),-5px_-5px_15px_rgba(255,255,255,0.02)] transition-transform hover:scale-105">
+        <div className="p-2 sm:p-2.5 lg:p-3 rounded-full bg-[rgb(var(--bg-secondary))] mb-2 sm:mb-3 text-[rgb(var(--accent))] shadow-inner">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
         </div>
-        <h3 className="text-3xl font-bold text-[rgb(var(--text-primary))]">{value}+</h3>
-        <p className="text-sm text-[rgb(var(--text-secondary))] font-medium uppercase tracking-wider">{label}</p>
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[rgb(var(--text-primary))]">{value}+</h3>
+        <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] font-medium uppercase tracking-wider text-center">{label}</p>
     </div>
 );
 
@@ -109,6 +106,8 @@ const AboutPage = () => {
     // Carousel State
     const [certIndex, setCertIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -152,6 +151,31 @@ const AboutPage = () => {
         setCertIndex((prev) => (prev - 1 + certificates.length) % certificates.length);
     };
 
+    // Touch handlers for swipe gestures
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            handleNextCert();
+        } else if (isRightSwipe) {
+            handlePrevCert();
+        }
+    };
+
     // --- Smoother 3D Logic ---
     const getCardStyle = (index) => {
         const len = certificates.length;
@@ -169,24 +193,64 @@ const AboutPage = () => {
 
     const cardVariants = {
         center: {
-            x: '0%', scale: 1, opacity: 1, zIndex: 30, rotateY: 0,
-            transition: { duration: 0.5, ease: "easeInOut" }
+            x: '0%',
+            scale: 1,
+            opacity: 1,
+            zIndex: 30,
+            rotateY: 0,
+            filter: 'blur(0px)',
+            transition: {
+                duration: 0.7,
+                ease: [0.645, 0.045, 0.355, 1.000]
+            }
         },
         left: {
-            x: '-80%', scale: 0.8, opacity: 0.4, zIndex: 20, rotateY: 15,
-            transition: { duration: 0.5, ease: "easeInOut" }
+            x: '-85%',
+            scale: 0.75,
+            opacity: 0.6,
+            zIndex: 20,
+            rotateY: 25,
+            filter: 'blur(1px)',
+            transition: {
+                duration: 0.7,
+                ease: [0.645, 0.045, 0.355, 1.000]
+            }
         },
         right: {
-            x: '80%', scale: 0.8, opacity: 0.4, zIndex: 20, rotateY: -15,
-            transition: { duration: 0.5, ease: "easeInOut" }
+            x: '85%',
+            scale: 0.75,
+            opacity: 0.6,
+            zIndex: 20,
+            rotateY: -25,
+            filter: 'blur(1px)',
+            transition: {
+                duration: 0.7,
+                ease: [0.645, 0.045, 0.355, 1.000]
+            }
         },
         hiddenLeft: {
-            x: '-100%', scale: 0.5, opacity: 0, zIndex: 10, rotateY: 0,
-            transition: { duration: 0.5, ease: "easeInOut" }
+            x: '-120%',
+            scale: 0.4,
+            opacity: 0,
+            zIndex: 10,
+            rotateY: 35,
+            filter: 'blur(4px)',
+            transition: {
+                duration: 0.7,
+                ease: [0.645, 0.045, 0.355, 1.000]
+            }
         },
         hiddenRight: {
-            x: '100%', scale: 0.5, opacity: 0, zIndex: 10, rotateY: 0,
-            transition: { duration: 0.5, ease: "easeInOut" }
+            x: '120%',
+            scale: 0.4,
+            opacity: 0,
+            zIndex: 10,
+            rotateY: -35,
+            filter: 'blur(4px)',
+            transition: {
+                duration: 0.7,
+                ease: [0.645, 0.045, 0.355, 1.000]
+            }
         }
     };
 
@@ -238,14 +302,35 @@ const AboutPage = () => {
                                 {/* Socials & Resume (Below title) */}
                                 <div className="flex flex-wrap justify-center lg:justify-start gap-4 mb-8">
                                     {socials.map(social => {
+                                        // 1. Get the icon
                                         const Icon = getSocialIcon(social.platform);
+
                                         return (
-                                            <a key={social._id} href={social.url} target="_blank" rel="noopener noreferrer" className="p-3 glass rounded-xl hover:text-[rgb(var(--accent))] hover:-translate-y-1 transition-all">
+                                            <a
+                                                key={social._id}
+                                                href={social.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                // 2. CHANGED: 'text-black' -> 'text-[rgb(var(--text-primary))]'
+                                                // This ensures icons are White in Dark Mode and Black in Light Mode.
+                                                className="p-3 glass rounded-xl text-[rgb(var(--text-primary))] hover:text-[rgb(var(--accent))] hover:-translate-y-1 transition-all"
+                                            >
                                                 <Icon className="w-5 h-5" />
                                             </a>
                                         );
                                     })}
-                                    {about.resume?.url && <a href={about.resume.url} target="_blank" rel="noopener noreferrer" className="px-5 py-3 rounded-xl bg-[rgb(var(--accent))] text-white font-medium shadow-lg shadow-[rgb(var(--accent))]/25 hover:shadow-[rgb(var(--accent))]/40 hover:-translate-y-1 transition-all flex items-center gap-2"><Download className="w-4 h-4" /> Resume</a>}
+
+                                    {/* Resume Button */}
+                                    {about.resume?.url && (
+                                        <a
+                                            href={about.resume.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-5 py-3 rounded-xl bg-[rgb(var(--accent))] text-white font-medium shadow-lg shadow-[rgb(var(--accent))]/25 hover:shadow-[rgb(var(--accent))]/40 hover:-translate-y-1 transition-all flex items-center gap-2"
+                                        >
+                                            <Download className="w-4 h-4" /> Resume
+                                        </a>
+                                    )}
                                 </div>
                             </motion.div>
 
@@ -378,22 +463,28 @@ const AboutPage = () => {
                     </div>
 
                     <div
-                        className="relative w-full max-w-[1200px] mx-auto h-[450px] sm:h-[550px] flex items-center justify-center perspective-1000"
+                        className="relative w-full max-w-[1200px] mx-auto h-[400px] sm:h-[500px] lg:h-[550px] flex items-center justify-center"
+                        style={{ perspective: '2000px', perspectiveOrigin: 'center' }}
                         onMouseEnter={() => setIsHovered(true)}
                         onMouseLeave={() => setIsHovered(false)}
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
                     >
-                        {/* Navigation Arrows - Desktop */}
+                        {/* Navigation Arrows - Enhanced for All Devices */}
                         <button
                             onClick={handlePrevCert}
-                            className="absolute left-4 sm:left-10 z-30 p-3 rounded-full bg-[rgb(var(--bg-card))]/80 border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white transition-all shadow-lg hidden sm:flex"
+                            aria-label="Previous certificate"
+                            className="absolute left-2 sm:left-6 lg:left-10 z-30 p-2 sm:p-3 rounded-full bg-[rgb(var(--bg-card))]/90 backdrop-blur-md border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-lg flex items-center justify-center group"
                         >
-                            <ChevronLeft className="w-6 h-6" />
+                            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:-translate-x-0.5" />
                         </button>
                         <button
                             onClick={handleNextCert}
-                            className="absolute right-4 sm:right-10 z-30 p-3 rounded-full bg-[rgb(var(--bg-card))]/80 border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white transition-all shadow-lg hidden sm:flex"
+                            aria-label="Next certificate"
+                            className="absolute right-2 sm:right-6 lg:right-10 z-30 p-2 sm:p-3 rounded-full bg-[rgb(var(--bg-card))]/90 backdrop-blur-md border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-lg flex items-center justify-center group"
                         >
-                            <ChevronRight className="w-6 h-6" />
+                            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-0.5" />
                         </button>
 
                         {/* Carousel Track */}
@@ -408,11 +499,12 @@ const AboutPage = () => {
                                         initial={false}
                                         animate={position}
                                         variants={cardVariants}
-                                        className="absolute w-[85vw] max-w-[280px] sm:max-w-[450px] lg:max-w-[500px]"
+                                        className="absolute w-[80vw] max-w-[260px] sm:w-[70vw] sm:max-w-[400px] lg:max-w-[500px]"
+                                        style={{ transformStyle: 'preserve-3d' }}
                                     >
-                                        <GlassCard className="h-[400px] sm:h-[450px] flex flex-col p-0 overflow-hidden shadow-2xl border border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]/50 transition-colors">
+                                        <GlassCard className="h-[350px] sm:h-[400px] lg:h-[450px] flex flex-col p-0 overflow-hidden shadow-2xl border border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]/50 transition-all duration-300 transform-gpu">
                                             {/* Image Area */}
-                                            <div className="relative h-48 sm:h-60 bg-[rgb(var(--bg-secondary))]/30 p-6 flex items-center justify-center overflow-hidden">
+                                            <div className="relative h-40 sm:h-48 lg:h-60 bg-[rgb(var(--bg-secondary))]/30 p-4 sm:p-6 flex items-center justify-center overflow-hidden">
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-[rgb(var(--accent))]/5 to-transparent" />
                                                 <img
                                                     src={cert.image.url}
@@ -422,18 +514,18 @@ const AboutPage = () => {
                                             </div>
 
                                             {/* Content Area */}
-                                            <div className="p-6 flex-1 flex flex-col justify-between bg-[rgb(var(--bg-card))]/80 backdrop-blur-md">
+                                            <div className="p-4 sm:p-5 lg:p-6 flex-1 flex flex-col justify-between bg-[rgb(var(--bg-card))]/80 backdrop-blur-md">
                                                 <div>
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <h3 className="font-bold text-lg sm:text-xl leading-tight line-clamp-2 text-[rgb(var(--text-primary))]">
+                                                        <h3 className="font-bold text-base sm:text-lg lg:text-xl leading-tight line-clamp-2 text-[rgb(var(--text-primary))]">
                                                             {cert.title}
                                                         </h3>
                                                         <Award className="w-5 h-5 text-[rgb(var(--accent))] flex-shrink-0" />
                                                     </div>
-                                                    <p className="text-sm font-medium text-[rgb(var(--accent))] mb-4">
+                                                    <p className="text-xs sm:text-sm font-medium text-[rgb(var(--accent))] mb-3 sm:mb-4">
                                                         {cert.issuer}
                                                     </p>
-                                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] line-clamp-3">
+                                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] line-clamp-2 sm:line-clamp-3">
                                                         {cert.description}
                                                     </p>
                                                 </div>
@@ -461,13 +553,16 @@ const AboutPage = () => {
                             })}
                         </div>
 
-                        {/* Mobile Indicators */}
-                        <div className="absolute bottom-0 flex gap-2 sm:hidden">
+                        {/* Mobile Indicators - Enhanced */}
+                        <div className="absolute -bottom-8 sm:-bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
                             {certificates.map((_, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => setCertIndex(idx)}
-                                    className={`h-2 rounded-full transition-all duration-300 ${idx === certIndex ? 'w-6 bg-[rgb(var(--accent))]' : 'w-2 bg-[rgb(var(--border))]'
+                                    aria-label={`Go to certificate ${idx + 1}`}
+                                    className={`h-2 rounded-full transition-all duration-300 ${idx === certIndex
+                                        ? 'w-8 bg-[rgb(var(--accent))]'
+                                        : 'w-2 bg-[rgb(var(--border))] hover:bg-[rgb(var(--text-secondary))]/50'
                                         }`}
                                 />
                             ))}

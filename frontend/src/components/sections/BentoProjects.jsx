@@ -86,7 +86,7 @@ const BentoProjects = () => {
     };
 
     return (
-        <section className="py-12 md:py-24 relative overflow-hidden">
+        <section id="work" className="py-12 md:py-24 relative overflow-hidden">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-8 md:mb-12 relative z-10">
                 <div className="flex flex-col items-center text-center">
                     <motion.div

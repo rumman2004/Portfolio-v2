@@ -4,6 +4,7 @@ import { ArrowRight, Download } from 'lucide-react';
 import { Button } from '../ui';
 import { useFetch } from '../../hooks/useFetch';
 import { useTheme } from '../../context/ThemeContext';
+import Loader from '../ui/Loader';
 
 const Hero = () => {
     const { theme } = useTheme();
@@ -45,8 +46,18 @@ const Hero = () => {
 
         return () => clearTimeout(timeout);
     }, []);
+    const scrollToWork = () => {
+        const workSection = document.getElementById('work');
+        if (workSection) {
+            workSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
 
-    if (loading) return <div className="h-[60vh] flex items-center justify-center">Loading...</div>;
+    if (loading) return (
+        <div className="h-[60vh] flex items-center justify-center">
+            <Loader size="lg" />
+        </div>
+    );
 
     return (
         <section className="relative flex flex-col items-center justify-center py-12 md:py-20">
@@ -96,8 +107,8 @@ const Hero = () => {
 
                     {/* Buttons */}
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 w-full px-8 sm:px-0">
-                        <Button size="lg" icon={ArrowRight} className="w-full sm:w-auto shadow-xl shadow-[rgb(var(--accent))]/20">
-                            View My Work
+                        <Button size="lg" icon={ArrowRight} onClick={scrollToWork} className="w-full sm:w-auto shadow-xl shadow-[rgb(var(--accent))]/20">
+                            View My Works
                         </Button>
 
                         {aboutData?.resume?.url && (
