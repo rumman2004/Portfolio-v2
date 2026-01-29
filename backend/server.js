@@ -19,8 +19,27 @@ import connectDB from './config/db.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import Admin from './model/Admin.js'; // Import Admin Model
 
+const syncAdmin = async () => {
+    try {
+        if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) return;
+
+        const adminExists = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
+        if (!adminExists) {
+            await Admin.create({
+                name: 'Admin',
+                email: process.env.ADMIN_EMAIL,
+                password: process.env.ADMIN_PASSWORD
+            });
+            console.log(`🔐 Admin Account Auto-Created`);
+        }
+    } catch (error) {
+        console.error('❌ Admin Sync Error:', error.message);
+    }
+};
+
 // Connect to database
 connectDB();
+syncAdmin();
 
 const app = express();
 
@@ -85,37 +104,12 @@ app.use(notFound);
 app.use(errorHandler);
 
 // --- AUTO-SYNC ADMIN FUNCTION ---
-const syncAdmin = async () => {
-    try {
-        const email = process.env.ADMIN_EMAIL;
-        const password = process.env.ADMIN_PASSWORD;
-
-        if (!email || !password) {
-            console.log('⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set in .env');
-            return;
-        }
-
-        // Check if this admin exists
-        const adminExists = await Admin.findOne({ email });
-
-        if (!adminExists) {
-            // Create new admin from .env
-            await Admin.create({ name: 'Admin', email, password });
-            console.log(`🔐 Admin Account Auto-Created: ${email}`);
-        } else {
-            console.log(`✅ Admin Account Verified: ${email}`);
-        }
-    } catch (error) {
-        console.error('❌ Admin Sync Error:', error.message);
-    }
-};
 
 const PORT = process.env.PORT || 5000;
 
-// Run Sync, THEN start server
-syncAdmin().then(() => {
+if (process.env.NODE_ENV !== 'production') {
     app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
-        console.log(`📍 http://localhost:${PORT}`);
     });
-});
+}
+export default app;
