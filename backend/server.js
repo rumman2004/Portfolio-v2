@@ -1,0 +1,121 @@
+// Load environment variables FIRST - Before any imports
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Verify environment variables loaded
+console.log('🔧 Environment Variables Check:');
+console.log('   NODE_ENV:', process.env.NODE_ENV || 'not set');
+console.log('   PORT:', process.env.PORT || 'not set');
+console.log('   MONGODB_URI:', process.env.MONGODB_URI ? '✅ SET' : '❌ MISSING');
+console.log('   CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ SET' : '❌ MISSING');
+console.log('   CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? '✅ SET' : '❌ MISSING');
+console.log('   JWT_SECRET:', process.env.JWT_SECRET ? '✅ SET' : '❌ MISSING');
+console.log('');
+
+// Now import other modules
+import express from 'express';
+import cors from 'cors';
+import connectDB from './config/db.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import Admin from './model/Admin.js'; // Import Admin Model
+
+// Connect to database
+connectDB();
+
+const app = express();
+
+// Middleware
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Log all incoming requests (helpful for debugging)
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
+
+// Import routes
+import authRoutes from './routes/authRoutes.js';
+import aboutRoutes from './routes/aboutRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
+import experienceRoutes from './routes/experienceRoutes.js';
+import certificateRoutes from './routes/certificateRoutes.js';
+import skillRoutes from './routes/skillRoutes.js';
+import socialRoutes from './routes/socialRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
+
+// Routes
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Portfolio API is running',
+        version: '1.0.0',
+        environment: process.env.NODE_ENV,
+        cloudinary: process.env.CLOUDINARY_CLOUD_NAME ? '✓ Configured' : '✗ Not Configured',
+        database: 'Connected',
+        endpoints: {
+            auth: '/api/auth',
+            about: '/api/about',
+            projects: '/api/projects',
+            experiences: '/api/experiences',
+            certificates: '/api/certificates',
+            skills: '/api/skills',
+            socials: '/api/socials',
+            contacts: '/api/contacts'
+        }
+    });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/about', aboutRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/experiences', experienceRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/skills', skillRoutes);
+app.use('/api/socials', socialRoutes);
+app.use('/api/contacts', contactRoutes);
+
+// Error handling middleware
+app.use(notFound);
+app.use(errorHandler);
+
+// --- AUTO-SYNC ADMIN FUNCTION ---
+const syncAdmin = async () => {
+    try {
+        const email = process.env.ADMIN_EMAIL;
+        const password = process.env.ADMIN_PASSWORD;
+
+        if (!email || !password) {
+            console.log('⚠️ ADMIN_EMAIL or ADMIN_PASSWORD not set in .env');
+            return;
+        }
+
+        // Check if this admin exists
+        const adminExists = await Admin.findOne({ email });
+
+        if (!adminExists) {
+            // Create new admin from .env
+            await Admin.create({ name: 'Admin', email, password });
+            console.log(`🔐 Admin Account Auto-Created: ${email}`);
+        } else {
+            console.log(`✅ Admin Account Verified: ${email}`);
+        }
+    } catch (error) {
+        console.error('❌ Admin Sync Error:', error.message);
+    }
+};
+
+const PORT = process.env.PORT || 5000;
+
+// Run Sync, THEN start server
+syncAdmin().then(() => {
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`📍 http://localhost:${PORT}`);
+    });
+});

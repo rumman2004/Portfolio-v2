@@ -1,0 +1,10 @@
+export { default as Login } from './Login';
+export { default as Dashboard } from './Dashboard';
+export { default as ManageProjects } from './ManageProjects';
+export { default as ManageSkills } from './ManageSkills';
+export { default as ManageExperience } from './ManageExperience';
+export { default as ManageCertificates } from './ManageCertificates';
+export { default as ManageSocials } from './ManageSocials';
+export { default as ViewContacts } from './ViewContacts';
+export { default as Profile } from './Profile';
+export { default as EditAbout } from './EditAbout';
