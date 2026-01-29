@@ -70,7 +70,7 @@ export const getContact = async (req, res) => {
     }
 };
 
-// @desc    Create contact message
+// @desc    Create contact message & Send Emails
 // @route   POST /api/contacts
 // @access  Public
 export const createContact = async (req, res) => {
@@ -94,7 +94,7 @@ export const createContact = async (req, res) => {
             });
         }
 
-        // Create contact in database
+        // 1. Create contact in database
         const contact = await Contact.create({
             name: name.trim(),
             email: email.trim().toLowerCase(),
@@ -103,34 +103,21 @@ export const createContact = async (req, res) => {
             phone: phone?.trim() || ''
         });
 
-        console.log('✅ Contact message saved:', contact._id);
+        console.log('✅ Contact message saved to DB:', contact._id);
 
-        // Send emails asynchronously (non-blocking)
-        const emailPromises = [];
+        // 2. Send Emails (AWAIT is critical for Vercel/Serverless)
+        try {
+            await Promise.all([
+                sendAdminNotification(contact),
+                sendThankYouEmail(contact)
+            ]);
+            console.log('📧 All automation emails sent successfully');
+        } catch (emailError) {
+            // If email fails, we log it but don't fail the request (since DB save worked)
+            console.error('⚠️ Email sending failed (Check Vercel Env Vars):', emailError.message);
+        }
 
-        // Send admin notification
-        emailPromises.push(
-            sendAdminNotification(contact)
-                .then(() => console.log('📧 Admin notification sent'))
-                .catch(error => console.error('⚠️ Failed to send admin notification:', error.message))
-        );
-
-        // Send thank you email to sender
-        emailPromises.push(
-            sendThankYouEmail(contact)
-                .then(() => console.log('📧 Thank you email sent'))
-                .catch(error => console.error('⚠️ Failed to send thank you email:', error.message))
-        );
-
-        // Don't wait for emails, respond immediately
-        Promise.allSettled(emailPromises)
-            .then(results => {
-                const failedEmails = results.filter(r => r.status === 'rejected');
-                if (failedEmails.length > 0) {
-                    console.warn('⚠️ Some emails failed to send:', failedEmails.length);
-                }
-            });
-
+        // 3. Send Response
         res.status(201).json({
             success: true,
             message: 'Message sent successfully! You will receive a confirmation email shortly.',
