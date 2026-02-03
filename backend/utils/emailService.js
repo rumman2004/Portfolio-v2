@@ -219,7 +219,7 @@ export const sendThankYouEmail = async (contactData) => {
                     </ul>
                     
                     <center>
-                        <a href="${process.env.PORTFOLIO_URL || process.env.PORTFOLIO_URL_ALT ||'https://yourwebsite.com'}" class="cta-button">
+                        <a href="${process.env.PORTFOLIO_URL || process.env.PORTFOLIO_URL_ALT ||'https://rumman-portfolio-ryuu.vercel.app'}" class="cta-button">
                             Visit My Portfolio
                         </a>
                     </center>
