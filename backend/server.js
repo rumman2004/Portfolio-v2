@@ -44,9 +44,24 @@ syncAdmin();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.CLIENT_URL_ALT,
+  "http://localhost:5173"
+];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || process.env.CLIENT_URL_ALT || 'http://localhost:5173',
-    credentials: true
+  origin: function (origin, callback) {
+    // allow requests with no origin (Postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
