@@ -44,25 +44,9 @@ syncAdmin();
 const app = express();
 
 // Middleware
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "https://www.rumman-ahmed-portfolio.in",
-  "http://localhost:5173"
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // allow server-to-server, Postman, Vercel internal calls
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-
-    console.error("CORS blocked:", origin);
-    return callback(null, false);
-  },
-  credentials: true
+    origin: process.env.CLIENT_URL_ALT || process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
 }));
 
 app.use(express.json());
