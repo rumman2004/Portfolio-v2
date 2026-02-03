@@ -46,7 +46,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  process.env.CLIENT_URL_ALT,
+  "https://www.rumman-ahmed-portfolio.in",
   "http://localhost:5173"
 ];
 
