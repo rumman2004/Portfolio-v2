@@ -78,28 +78,28 @@ const Dashboard = () => {
             value: stats.projects,
             icon: FolderOpen,
             color: 'blue',
-            trend: 0 // Dummy trend data for visual
+            trend: 12 // Dummy trend data for visual
         },
         {
             title: 'Total Skills',
             value: stats.skills,
             icon: Wrench,
             color: 'purple',
-            trend: 0
+            trend: 5
         },
         {
             title: 'Experience',
             value: stats.experiences,
             icon: Briefcase,
             color: 'green',
-            trend: 0
+            trend: 1
         },
         {
             title: 'Certificates',
             value: stats.certificates,
             icon: Award,
             color: 'orange',
-            trend: 0
+            trend: 7
         },
         {
             title: 'Messages',
@@ -150,6 +150,7 @@ const Dashboard = () => {
                             value={stat.value}
                             icon={stat.icon}
                             color={stat.color}
+                            trend={stat.trend}
                         />
                     </motion.div>
                 ))}
