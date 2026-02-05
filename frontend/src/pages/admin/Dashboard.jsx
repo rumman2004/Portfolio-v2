@@ -78,14 +78,14 @@ const Dashboard = () => {
             value: stats.projects,
             icon: FolderOpen,
             color: 'blue',
-            trend: 12 // Dummy trend data for visual
+            trend: 0 // Dummy trend data for visual
         },
         {
             title: 'Total Skills',
             value: stats.skills,
             icon: Wrench,
             color: 'purple',
-            trend: 5
+            trend: 0
         },
         {
             title: 'Experience',
@@ -99,7 +99,7 @@ const Dashboard = () => {
             value: stats.certificates,
             icon: Award,
             color: 'orange',
-            trend: 2
+            trend: 0
         },
         {
             title: 'Messages',
