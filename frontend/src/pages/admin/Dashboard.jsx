@@ -150,7 +150,6 @@ const Dashboard = () => {
                             value={stat.value}
                             icon={stat.icon}
                             color={stat.color}
-                            trend={stat.trend}
                         />
                     </motion.div>
                 ))}
