@@ -398,7 +398,7 @@ const AboutPage = () => {
                         </motion.h2>
                     </div>
                     <div className="relative w-full overflow-hidden mask-linear-fade">
-                        <motion.div className="flex items-start py-8" animate={{ x: ["0%", "-50%"] }} transition={{ repeat: Infinity, ease: "linear", duration: 50 }} style={{ width: "max-content" }}>
+                        <motion.div className="flex items-start py-8" animate={{ x: ["0%", "-50%"] }} transition={{ repeat: Infinity, ease: "linear", duration: 20 }} style={{ width: "max-content" }}>
                             {marqueeGroups.map((group, index) => (
                                 <NeuCategoryGroup key={`${group._id}-${index}`} group={group} />
                             ))}
