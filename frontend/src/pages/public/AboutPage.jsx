@@ -425,7 +425,7 @@ const AboutPage = () => {
                                     <div className="md:w-1/2" />
                                     <div className="md:w-1/2 pl-6 md:pl-0">
                                         <GlassCard className="relative p-6 border-t-4 border-t-[rgb(var(--accent))] hover:-translate-y-1 transition-transform duration-300">
-                                            <div className="absolute -top-4 right-4 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border))] px-3 py-1 rounded-full text-xs font-bold text-[rgb(var(--accent))] shadow-sm">
+                                            <div className="absolute top-4 right-4 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border))] px-3 py-1 rounded-full text-xs font-bold text-[rgb(var(--accent))] shadow-sm">
                                                 {new Date(exp.startDate).getFullYear()} - {exp.current ? 'Present' : new Date(exp.endDate).getFullYear()}
                                             </div>
                                             <div className="flex items-center gap-3 mb-3">
