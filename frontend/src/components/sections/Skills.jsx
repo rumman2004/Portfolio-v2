@@ -93,7 +93,7 @@ const Skills = () => {
                                             x: {
                                                 repeat: Infinity,
                                                 repeatType: "loop",
-                                                duration: 40,
+                                                duration: 25,
                                                 ease: "linear",
                                             },
                                         }}
