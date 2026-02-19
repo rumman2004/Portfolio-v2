@@ -1,103 +1,134 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import { Award, ExternalLink, Calendar, CheckCircle, ChevronRight, ChevronLeft, Shield, Hash } from 'lucide-react';
 import { certificatesAPI } from '../../services/api';
 import { GlassCard } from '../ui';
 import { useTheme } from '../../context/ThemeContext';
 
+/**
+ * FIX: The previous maskImage gradient was applied to the same div that
+ * contained the full-width card — so it clipped the card edges.
+ *
+ * SOLUTION:
+ *  • The OUTER section has overflow-hidden — this clips the card during 3D transit.
+ *  • The card itself is constrained to max-w-2xl and centered — it never touches
+ *    the section edges, so no gradient or clip ever touches it.
+ *  • The stage div (AnimatePresence parent) has NO mask, NO overflow-hidden.
+ *    It's wider than the card so in-flight rotations look correct.
+ *  • During animation the card may briefly appear at the edges — the section's
+ *    overflow-hidden handles that cleanly without any gradient artifact.
+ */
+
+const ROTATE_DEG = 52;
+
+const slideVariants = {
+    enter: (dir) => ({
+        x:       dir > 0 ? '100%' : '-100%',
+        rotateY: dir > 0 ? ROTATE_DEG : -ROTATE_DEG,
+        scale:   0.78,
+        opacity: 0,
+        z:       -260,
+    }),
+    center: {
+        x:       0,
+        rotateY: 0,
+        scale:   1,
+        opacity: 1,
+        z:       0,
+        transition: {
+            duration: 0.72,
+            ease:     [0.22, 1, 0.36, 1],
+            opacity:  { duration: 0.3 },
+        },
+    },
+    exit: (dir) => ({
+        x:       dir > 0 ? '-100%' : '100%',
+        rotateY: dir > 0 ? -ROTATE_DEG : ROTATE_DEG,
+        scale:   0.78,
+        opacity: 0,
+        z:       -260,
+        transition: {
+            duration: 0.55,
+            ease:     [0.55, 0, 1, 0.45],
+            opacity:  { duration: 0.22 },
+        },
+    }),
+};
+
+const formatDate = (d) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// ── Main Component ──────────────────────────────────────────────────────
 const BentoCertificates = () => {
     const [certificates, setCertificates] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+    const [loading, setLoading]           = useState(true);
+    const [activeIndex, setActiveIndex]   = useState(0);
+    const [direction, setDirection]       = useState(0);
+    const timerRef                        = useRef(null);
+    const { theme }                       = useTheme();
+    const isDark                          = theme === 'dark';
 
     useEffect(() => {
-        const fetchCertificates = async () => {
+        (async () => {
             try {
-                const response = await certificatesAPI.getAll();
-                setCertificates(response.data.data);
-            } catch (error) {
-                console.error("Failed to fetch certificates", error);
+                const res = await certificatesAPI.getAll();
+                setCertificates(res.data.data);
+            } catch (e) {
+                console.error('Failed to fetch certificates', e);
             } finally {
                 setLoading(false);
             }
-        };
-
-        fetchCertificates();
+        })();
     }, []);
 
-    // Auto-advance slide every 6 seconds (increased for more reading time)
-    useEffect(() => {
-        if (certificates.length <= 1) return;
-        const interval = setInterval(() => {
-            setActiveIndex((prev) => (prev + 1) % certificates.length);
-        }, 6000);
-        return () => clearInterval(interval);
+    const goNext = useCallback(() => {
+        setDirection(1);
+        setActiveIndex((p) => (p + 1) % certificates.length);
     }, [certificates.length]);
 
-    const handleNext = () => {
-        setActiveIndex((prev) => (prev + 1) % certificates.length);
+    const goPrev = useCallback(() => {
+        setDirection(-1);
+        setActiveIndex((p) => (p - 1 + certificates.length) % certificates.length);
+    }, [certificates.length]);
+
+    const resetTimer = useCallback(() => {
+        clearInterval(timerRef.current);
+        if (certificates.length > 1) timerRef.current = setInterval(goNext, 6500);
+    }, [goNext, certificates.length]);
+
+    useEffect(() => { resetTimer(); return () => clearInterval(timerRef.current); }, [resetTimer]);
+
+    const handlePrev = () => { goPrev(); resetTimer(); };
+    const handleNext = () => { goNext(); resetTimer(); };
+    const handleDot  = (i) => {
+        setDirection(i > activeIndex ? 1 : -1);
+        setActiveIndex(i);
+        resetTimer();
     };
 
-    const handlePrev = () => {
-        setActiveIndex((prev) => (prev - 1 + certificates.length) % certificates.length);
-    };
-
-    if (loading) return null;
-    if (certificates.length === 0) return null;
-
-    // Enhanced 3D Animation Variants
-    const slideVariants = {
-        enter: (direction) => ({
-            x: direction > 0 ? 1000 : -1000,
-            opacity: 0,
-            scale: 0.7,
-            rotateY: direction > 0 ? -60 : 60,
-            rotateX: -15,
-            zIndex: 0
-        }),
-        center: {
-            x: 0,
-            opacity: 1,
-            scale: 1,
-            rotateY: 0,
-            rotateX: 0,
-            zIndex: 1,
-            transition: {
-                duration: 0.9,
-                type: "spring",
-                stiffness: 100,
-                damping: 20
-            }
-        },
-        exit: (direction) => ({
-            x: direction > 0 ? -1000 : 1000,
-            opacity: 0,
-            scale: 0.7,
-            rotateY: direction > 0 ? 60 : -60,
-            rotateX: 15,
-            zIndex: 0,
-            transition: {
-                duration: 0.7,
-                ease: "easeInOut"
-            }
-        })
-    };
+    if (loading || certificates.length === 0) return null;
 
     return (
+        /*
+         * overflow-hidden on the section clips in-transit cards at screen edges.
+         * This is the ONLY clip — nothing clips the resting card.
+         */
         <section className="py-24 relative overflow-hidden">
-            {/* Header */}
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-20 relative z-10">
+
+            {/* ── Header ── */}
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-14 relative z-10">
                 <div className="flex flex-col items-center text-center">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold mb-6 border-2 backdrop-blur-md shadow-lg ${isDark
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold mb-6 border-2 backdrop-blur-md shadow-lg ${
+                            isDark
                                 ? 'bg-gradient-to-r from-purple-500/20 to-[rgb(var(--accent))]/20 border-purple-500/30 text-purple-300'
                                 : 'bg-gradient-to-r from-purple-100 to-purple-50 border-purple-300 text-purple-700'
-                            }`}
+                        }`}
                     >
                         <Award className="w-5 h-5" />
                         <span>Professional Achievements</span>
@@ -110,7 +141,10 @@ const BentoCertificates = () => {
                         transition={{ delay: 0.1 }}
                         className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-5 leading-tight tracking-tight"
                     >
-                        Certified <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-[rgb(var(--accent))] to-pink-500">Expertise</span>
+                        Certified{' '}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-[rgb(var(--accent))] to-pink-500">
+                            Expertise
+                        </span>
                     </motion.h2>
 
                     <motion.p
@@ -125,260 +159,271 @@ const BentoCertificates = () => {
                 </div>
             </div>
 
-            {/* 3D Carousel Container - Responsive Heights */}
-            <div className="relative w-full max-w-7xl mx-auto h-[500px] sm:h-[550px] md:h-[600px] lg:h-[650px] flex items-center justify-center px-4 sm:px-6">
+            {/* ── Carousel shell ── */}
+            {/*
+                This outer div sets the 3D perspective space.
+                It is NOT overflow-hidden — the section above handles clipping.
+                The nav buttons sit outside the perspective div so they aren't distorted.
+            */}
+            <div className="relative w-full px-4 sm:px-6">
 
-                {/* Navigation Buttons - Enhanced Design */}
+                {/* Perspective container — 3D space lives here */}
+                <div
+                    className="relative w-full"
+                    style={{
+                        perspective:       '1300px',
+                        perspectiveOrigin: '50% 50%',
+                    }}
+                >
+                    {/*
+                        Stage: wide enough that a rotating card entering from the side
+                        has room to spin. No overflow-hidden, no mask.
+                        Cards are centered within; the outer section clips anything
+                        that exits the viewport.
+                    */}
+                    <div
+                        className="relative w-full flex justify-center"
+                        style={{ transformStyle: 'preserve-3d', minHeight: '20px' }}
+                    >
+                        <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+                            <motion.div
+                                key={activeIndex}
+                                custom={direction}
+                                variants={slideVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                /*
+                                 * w-full + max-w-2xl keeps the card nicely contained
+                                 * and well away from any edges that might look clipped.
+                                 */
+                                className="w-full max-w-2xl"
+                                style={{
+                                    willChange:     'transform, opacity',
+                                    transformStyle: 'preserve-3d',
+                                    transformOrigin:'center center',
+                                }}
+                            >
+                                <TiltCard cert={certificates[activeIndex]} isDark={isDark} />
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+
+                {/* Nav Buttons — outside the 3D container so they are never distorted */}
                 <button
                     onClick={handlePrev}
-                    className="absolute left-2 sm:left-4 lg:left-8 z-20 p-2.5 sm:p-3 lg:p-4 rounded-full bg-gradient-to-br from-white/20 to-white/5 hover:from-white/30 hover:to-white/10 backdrop-blur-xl border border-white/20 transition-all duration-300 shadow-2xl hover:scale-110 active:scale-95 text-white"
                     aria-label="Previous certificate"
+                    className={`absolute left-0 sm:left-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        isDark
+                            ? 'bg-white/10 hover:bg-white/25 border-white/20 text-white'
+                            : 'bg-white/90 hover:bg-white border-slate-200 text-slate-800'
+                    }`}
                 >
                     <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
                 <button
                     onClick={handleNext}
-                    className="absolute right-2 sm:right-4 lg:right-8 z-20 p-2.5 sm:p-3 lg:p-4 rounded-full bg-gradient-to-br from-white/20 to-white/5 hover:from-white/30 hover:to-white/10 backdrop-blur-xl border border-white/20 transition-all duration-300 shadow-2xl hover:scale-110 active:scale-95 text-white"
                     aria-label="Next certificate"
+                    className={`absolute right-0 sm:right-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${
+                        isDark
+                            ? 'bg-white/10 hover:bg-white/25 border-white/20 text-white'
+                            : 'bg-white/90 hover:bg-white border-slate-200 text-slate-800'
+                    }`}
                 >
                     <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
 
-                {/* Certificate Card Container with 3D Perspective */}
-                <div className="relative w-full h-full" style={{ perspective: '1500px' }}>
-                    <AnimatePresence mode="wait" initial={false} custom={1}>
-                        <motion.div
-                            key={activeIndex}
-                            custom={1}
-                            variants={slideVariants}
-                            initial="enter"
-                            animate="center"
-                            exit="exit"
-                            className="absolute inset-0 flex items-center justify-center"
-                            style={{ transformStyle: 'preserve-3d' }}
-                        >
-                            <TiltCard cert={certificates[activeIndex]} isDark={isDark} />
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-
-                {/* Progress Indicators */}
-                <div className="absolute bottom-2 sm:bottom-4 lg:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
-                    {certificates.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setActiveIndex(index)}
-                            className={`transition-all duration-300 rounded-full ${index === activeIndex
-                                    ? 'w-6 sm:w-8 lg:w-10 h-2 bg-gradient-to-r from-purple-500 to-[rgb(var(--accent))] shadow-lg shadow-purple-500/50'
-                                    : 'w-2 h-2 bg-white/30 hover:bg-white/50'
+                {/* Dots */}
+                {certificates.length > 1 && (
+                    <div className="flex justify-center gap-2 mt-8">
+                        {certificates.map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => handleDot(i)}
+                                aria-label={`Go to certificate ${i + 1}`}
+                                className={`h-1.5 rounded-full transition-all duration-500 ${
+                                    i === activeIndex
+                                        ? 'w-8 bg-gradient-to-r from-purple-500 to-[rgb(var(--accent))]'
+                                        : isDark
+                                        ? 'w-2 bg-white/20 hover:bg-white/40'
+                                        : 'w-2 bg-slate-300 hover:bg-slate-500'
                                 }`}
-                            aria-label={`Go to certificate ${index + 1}`}
-                        />
-                    ))}
-                </div>
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </section>
     );
 };
 
-// --- Enhanced Sub-component for interactive 3D Hover Tilt ---
+// ── Tilt Card ───────────────────────────────────────────────────────────
 const TiltCard = ({ cert, isDark }) => {
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
+    const mx  = useMotionValue(0.5);
+    const my  = useMotionValue(0.5);
+    const smx = useSpring(mx, { stiffness: 120, damping: 18 });
+    const smy = useSpring(my, { stiffness: 120, damping: 18 });
+    const rotateX = useTransform(smy, [0, 1], [6, -6]);
+    const rotateY = useTransform(smx, [0, 1], [-6, 6]);
 
-    const rotateX = useTransform(y, [-200, 200], [8, -8]);
-    const rotateY = useTransform(x, [-200, 200], [-8, 8]);
-
-    const handleMouseMove = (event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const width = rect.width;
-        const height = rect.height;
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        const xPct = mouseX / width - 0.5;
-        const yPct = mouseY / height - 0.5;
-        x.set(xPct * 400);
-        y.set(yPct * 400);
+    const onMouseMove  = (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        mx.set((e.clientX - r.left) / r.width);
+        my.set((e.clientY - r.top)  / r.height);
     };
-
-    const handleMouseLeave = () => {
-        x.set(0);
-        y.set(0);
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    };
+    const onMouseLeave = () => { mx.set(0.5); my.set(0.5); };
 
     return (
         <motion.div
-            style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            className="w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto px-4"
-            transition={{ duration: 0.3 }}
+            onMouseMove={onMouseMove}
+            onMouseLeave={onMouseLeave}
+            style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+            className="w-full"
         >
-            <GlassCard className="w-full flex flex-col overflow-hidden border-2 border-white/30 !bg-opacity-30 shadow-2xl backdrop-blur-2xl">
-
-                {/* Image Section - Responsive Heights */}
-                <div className="relative h-48 sm:h-56 md:h-64 lg:h-80 w-full bg-gradient-to-br from-[rgb(var(--bg-secondary))]/80 to-[rgb(var(--bg-secondary))]/40 overflow-hidden group">
+            <GlassCard
+                className={`w-full flex flex-col overflow-hidden border shadow-2xl rounded-2xl ${
+                    isDark
+                        ? 'bg-white/[0.07] border-white/15 backdrop-blur-2xl'
+                        : 'bg-white border-slate-200/80 backdrop-blur-md shadow-slate-200/60'
+                }`}
+            >
+                {/* ── Certificate Image ── */}
+                <div className={`relative h-52 sm:h-60 md:h-72 w-full overflow-hidden group ${
+                    isDark
+                        ? 'bg-gradient-to-br from-slate-800 to-slate-900'
+                        : 'bg-slate-100'
+                }`}>
                     {cert.image?.url ? (
                         <>
                             <img
                                 src={cert.image.url}
                                 alt={cert.title || cert.name}
-                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                                loading="lazy"
                             />
-                            {/* Shine Effect */}
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none transform -skew-x-12" />
+                            {/* Subtle shine on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                         </>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                            <Award className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 opacity-20 text-[rgb(var(--text-secondary))]" />
+                            <Award className={`w-20 h-20 sm:w-24 sm:h-24 opacity-15 ${isDark ? 'text-white' : 'text-slate-400'}`} />
                         </div>
                     )}
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[rgb(var(--bg-card))]/60" />
+                    {/* Bottom fade — blends into the card content below */}
+                    <div className={`absolute inset-x-0 bottom-0 h-16 pointer-events-none ${
+                        isDark
+                            ? 'bg-gradient-to-t from-[rgb(var(--bg-card))] to-transparent'
+                            : 'bg-gradient-to-t from-white to-transparent'
+                    }`} />
 
-                    {/* Date Badge - Responsive */}
-                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 lg:top-5 lg:right-5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-black/70 backdrop-blur-md border border-white/20 font-semibold text-white flex items-center gap-1.5 sm:gap-2 shadow-2xl">
+                    {/* Date badge */}
+                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center gap-1.5 shadow-xl">
                         <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm">{formatDate(cert.issueDate || cert.date || cert.createdAt)}</span>
+                        <span className="text-xs sm:text-sm font-medium">{formatDate(cert.issueDate || cert.date || cert.createdAt)}</span>
                     </div>
 
-                    {/* Verified Badge - Responsive */}
-                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 lg:top-5 lg:left-5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-400 flex items-center gap-1.5 sm:gap-2 shadow-xl">
+                    {/* Verified badge */}
+                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-3 py-1.5 rounded-xl bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-400 flex items-center gap-1.5 shadow-xl">
                         <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="text-xs sm:text-sm font-semibold">Verified</span>
                     </div>
                 </div>
 
-                {/* Content Section - No Scroll, Responsive Padding */}
-                <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col gap-3 sm:gap-4 bg-[rgb(var(--bg-card))]/95 backdrop-blur-2xl">
-                    {/* Title Section */}
-                    <div className="space-y-2 sm:space-y-3">
-                        <div className="flex items-start justify-between gap-2 sm:gap-3">
-                            <h3 className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold leading-tight ${isDark ? 'text-white' : 'text-slate-800'
-                                }`}>
-                                {cert.title || cert.name}
-                            </h3>
-                            {cert.credentialUrl && (
-                                <a
-                                    href={cert.credentialUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-shrink-0 p-2 sm:p-2.5 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-[rgb(var(--accent))]/20 to-[rgb(var(--accent))]/10 text-[rgb(var(--accent))] hover:from-[rgb(var(--accent))] hover:to-[rgb(var(--accent))]/80 hover:text-white transition-all transform hover:scale-110 shadow-lg border border-[rgb(var(--accent))]/20"
-                                    title="View Certificate"
-                                >
-                                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
-                                </a>
-                            )}
-                        </div>
-
-                        {/* Issuer */}
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="p-1.5 sm:p-2 rounded-lg bg-[rgb(var(--accent))]/10 flex-shrink-0">
-                                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-[rgb(var(--accent))]" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[10px] sm:text-xs text-[rgb(var(--text-secondary))] uppercase tracking-wide font-medium">
-                                    Issued by
-                                </p>
-                                <p className="text-sm sm:text-base lg:text-lg font-bold text-[rgb(var(--accent))] truncate">
-                                    {cert.issuer || 'Verified Organization'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Description - Limit Lines on Mobile */}
-                    {cert.description && (
-                        <div className="pt-2 sm:pt-3 border-t border-[rgb(var(--border))]">
-                            <p className="text-xs sm:text-sm lg:text-base text-[rgb(var(--text-secondary))] leading-relaxed line-clamp-2 sm:line-clamp-3">
-                                {cert.description}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Credential Details Grid - Responsive */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 sm:pt-3 border-t border-[rgb(var(--border))]">
-                        {/* Issue Date */}
-                        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
-                            <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))] flex-shrink-0" />
-                                <span className="text-[10px] sm:text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide">
-                                    Issued
-                                </span>
-                            </div>
-                            <p className="text-xs sm:text-sm font-bold truncate">
-                                {formatDate(cert.issueDate || cert.date || cert.createdAt)}
-                            </p>
-                        </div>
-
-                        {/* Expiry Date or Placeholder */}
-                        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
-                            {cert.expiryDate ? (
-                                <>
-                                    <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500 flex-shrink-0" />
-                                        <span className="text-[10px] sm:text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide">
-                                            Expires
-                                        </span>
-                                    </div>
-                                    <p className="text-xs sm:text-sm font-bold truncate">
-                                        {formatDate(cert.expiryDate)}
-                                    </p>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
-                                        <span className="text-[10px] sm:text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide">
-                                            Valid
-                                        </span>
-                                    </div>
-                                    <p className="text-xs sm:text-sm font-bold">
-                                        Lifetime
-                                    </p>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Credential ID - Full Width if exists */}
-                        {cert.credentialId && (
-                            <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))] col-span-2">
-                                <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                                    <Hash className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))] flex-shrink-0" />
-                                    <span className="text-[10px] sm:text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide">
-                                        Credential ID
-                                    </span>
-                                </div>
-                                <p className="text-xs sm:text-sm font-mono font-bold break-all">
-                                    {cert.credentialId}
-                                </p>
-                            </div>
+                {/* ── Content ── */}
+                <div className={`flex-1 p-5 sm:p-6 lg:p-8 flex flex-col gap-4 ${
+                    isDark ? '' : 'bg-white'
+                }`}>
+                    {/* Title row */}
+                    <div className="flex items-start justify-between gap-3">
+                        <h3 className={`text-lg sm:text-xl md:text-2xl font-bold leading-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                            {cert.title || cert.name}
+                        </h3>
+                        {cert.credentialUrl && (
+                            <a
+                                href={cert.credentialUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0 p-2 sm:p-2.5 rounded-xl bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))] hover:text-white border border-[rgb(var(--accent))]/20 transition-all duration-200 hover:scale-110"
+                                title="View Certificate"
+                            >
+                                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </a>
                         )}
                     </div>
 
-                    {/* Verification Footer - Responsive */}
-                    <div className="mt-auto pt-3 sm:pt-4 flex items-center justify-between border-t-2 border-[rgb(var(--border))] gap-2">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
-                            <span className="text-xs sm:text-sm font-bold text-green-500">
-                                Verified
-                            </span>
+                    {/* Issuer */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-[rgb(var(--accent))]/10 flex-shrink-0">
+                            <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-[rgb(var(--accent))]" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] sm:text-xs text-[rgb(var(--text-secondary))] uppercase tracking-wide font-medium">Issued by</p>
+                            <p className="text-sm sm:text-base font-bold text-[rgb(var(--accent))] truncate">{cert.issuer || 'Verified Organization'}</p>
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    {cert.description && (
+                        <p className={`text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 pt-3 border-t text-[rgb(var(--text-secondary))] ${
+                            isDark ? 'border-white/10' : 'border-slate-100'
+                        }`}>
+                            {cert.description}
+                        </p>
+                    )}
+
+                    {/* Meta grid */}
+                    <div className={`grid grid-cols-2 gap-2 sm:gap-3 pt-3 border-t ${
+                        isDark ? 'border-white/10' : 'border-slate-100'
+                    }`}>
+                        <MetaBox
+                            icon={<Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))]" />}
+                            label="Issued"
+                            value={formatDate(cert.issueDate || cert.date || cert.createdAt)}
+                            isDark={isDark}
+                        />
+                        {cert.expiryDate ? (
+                            <MetaBox
+                                icon={<Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />}
+                                label="Expires"
+                                value={formatDate(cert.expiryDate)}
+                                isDark={isDark}
+                            />
+                        ) : (
+                            <MetaBox
+                                icon={<CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />}
+                                label="Valid"
+                                value="Lifetime"
+                                isDark={isDark}
+                            />
+                        )}
+                        {cert.credentialId && (
+                            <MetaBox
+                                icon={<Hash className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))]" />}
+                                label="Credential ID"
+                                value={cert.credentialId}
+                                mono
+                                full
+                                isDark={isDark}
+                            />
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className={`mt-auto pt-3 sm:pt-4 flex items-center justify-between border-t-2 ${
+                        isDark ? 'border-white/10' : 'border-slate-100'
+                    }`}>
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                            <span className="text-xs sm:text-sm font-bold text-green-500">Verified</span>
                         </div>
                         {cert.credentialUrl && (
                             <a
                                 href={cert.credentialUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs font-semibold text-[rgb(var(--accent))] hover:underline flex items-center gap-1 flex-shrink-0"
+                                className="text-xs font-semibold text-[rgb(var(--accent))] hover:underline flex items-center gap-1"
                             >
                                 <span className="hidden sm:inline">View Online</span>
                                 <span className="sm:hidden">View</span>
@@ -391,5 +436,24 @@ const TiltCard = ({ cert, isDark }) => {
         </motion.div>
     );
 };
+
+// ── MetaBox ─────────────────────────────────────────────────────────────
+const MetaBox = ({ icon, label, value, mono, full, isDark }) => (
+    <div className={`p-2.5 sm:p-3 rounded-xl border ${full ? 'col-span-2' : ''} ${
+        isDark
+            ? 'bg-white/[0.05] border-white/10'
+            : 'bg-slate-50 border-slate-200/80'
+    }`}>
+        <div className="flex items-center gap-1.5 mb-1">
+            {icon}
+            <span className="text-[10px] sm:text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wide">{label}</span>
+        </div>
+        <p className={`text-xs sm:text-sm font-bold ${mono ? 'font-mono break-all' : 'truncate'} ${
+            isDark ? 'text-white' : 'text-slate-800'
+        }`}>
+            {value}
+        </p>
+    </div>
+);
 
 export default BentoCertificates;
