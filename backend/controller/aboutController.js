@@ -34,7 +34,13 @@ export const createOrUpdateAbout = async (req, res) => {
         // --- HANDLE IMAGES ---
 
         // 1. Profile Image
-        if (req.files?.profileImage) {
+        // FIX: Handle the frontend "removeProfileImage" flag
+        if (req.body.removeProfileImage === 'true') {
+            if (about?.profileImage?.public_id) {
+                await deleteFromCloudinary(about.profileImage.public_id);
+            }
+            aboutData.profileImage = { url: '', public_id: '' };
+        } else if (req.files?.profileImage) {
             if (about?.profileImage?.public_id) {
                 await deleteFromCloudinary(about.profileImage.public_id);
             }
@@ -55,7 +61,7 @@ export const createOrUpdateAbout = async (req, res) => {
             };
         }
 
-        // 3. Hero Images (Append new ones to existing list)
+        // 3. Hero Images
         let currentHeroImages = about ? [...about.heroImages] : [];
 
         if (req.files?.heroImages) {

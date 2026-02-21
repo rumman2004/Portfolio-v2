@@ -4,10 +4,10 @@ import { TypeAnimation } from 'react-type-animation';
 import { aboutAPI, experienceAPI, certificatesAPI, skillsAPI, socialsAPI } from '../../services/api';
 import { GlassCard } from '../../components/ui';
 import {
-    Calendar, MapPin, Award, Mail, Phone, Download,
+    Calendar, MapPin, Award, Mail, Phone, 
     Briefcase, Code, User, ExternalLink, GraduationCap,
     Layers, Database, Server, Wrench, Cloud, Terminal,
-    ChevronLeft, ChevronRight
+    ChevronLeft, ChevronRight, Link // <-- Imported Link icon here
 } from 'lucide-react';
 // IMPORT THE DEDICATED ICONS
 import { socialIconMap } from '../../components/icons/SocialIcons';
@@ -311,8 +311,6 @@ const AboutPage = () => {
                                                 href={social.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                // 2. CHANGED: 'text-black' -> 'text-[rgb(var(--text-primary))]'
-                                                // This ensures icons are White in Dark Mode and Black in Light Mode.
                                                 className="p-3 glass rounded-xl text-[rgb(var(--text-primary))] hover:text-[rgb(var(--accent))] hover:-translate-y-1 transition-all"
                                             >
                                                 <Icon className="w-5 h-5" />
@@ -320,17 +318,16 @@ const AboutPage = () => {
                                         );
                                     })}
 
-                                    {/* Resume Button */}
-                                    {about.resume?.url && (
-                                        <a
-                                            href={about.resume.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-5 py-3 rounded-xl bg-[rgb(var(--accent))] text-white font-medium shadow-lg shadow-[rgb(var(--accent))]/25 hover:shadow-[rgb(var(--accent))]/40 hover:-translate-y-1 transition-all flex items-center gap-2"
-                                        >
-                                            <Download className="w-4 h-4" /> Resume
-                                        </a>
-                                    )}
+                                    {/* Resume Button - Styled identically to socials */}
+                                    <a
+                                        href="https://drive.google.com/file/d/1yfnHqjw8IbVnZ_2lmV2T7Y4aqk6ZkVY7/view?usp=sharing" // <-- PUT YOUR DIRECT RESUME LINK HERE
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="View Resume"
+                                        className="p-3 glass rounded-xl text-[rgb(var(--text-primary))] hover:text-[rgb(var(--accent))] hover:-translate-y-1 transition-all"
+                                    >
+                                        <Link className="w-5 h-5" />
+                                    </a>
                                 </div>
                             </motion.div>
 
