@@ -3,20 +3,19 @@ import {
     getAbout,
     createOrUpdateAbout,
     deleteProfileImage,
-    deleteHeroImage, // NEW Route
+    deleteHeroImage,
     deleteResume
 } from '../controller/aboutController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { upload } from '../config/cloudinary.js'; // Import directly from config
+import { upload, uploadToCloudinary } from '../config/cloudinary.js'; // ✅ import uploadToCloudinary
 import { handleUploadError } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
-// Define Upload Fields
 const uploadFields = upload.fields([
     { name: 'profileImage', maxCount: 1 },
     { name: 'resume', maxCount: 1 },
-    { name: 'heroImages', maxCount: 5 } // NEW: Allows up to 5 slider images
+    { name: 'heroImages', maxCount: 5 }
 ]);
 
 // Routes
@@ -27,11 +26,12 @@ router.post(
     protect,
     uploadFields,
     handleUploadError,
+    uploadToCloudinary,   // ✅ THIS IS THE MISSING PIECE
     createOrUpdateAbout
 );
 
 router.delete('/profile-image', protect, deleteProfileImage);
 router.delete('/resume', protect, deleteResume);
-router.delete('/hero-image/:id', protect, deleteHeroImage); // NEW: Delete specific slider image
+router.delete('/hero-image/:id', protect, deleteHeroImage);
 
 export default router;
