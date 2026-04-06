@@ -299,7 +299,7 @@ const ProjectCard = ({ project, isDark }) => {
                     </h3>
 
                     <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))] leading-relaxed line-clamp-3">
-                        {project.description}
+                        {project.shortDescription}
                     </p>
 
                     <div className="mt-auto space-y-4">
