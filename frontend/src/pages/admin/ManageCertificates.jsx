@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, Trash2, Award, ExternalLink, Calendar } from 'lucide-react';
-import { Button, Modal, Input, Textarea, GlassCard } from '../../components/ui';
+import { Plus, Edit, Trash2, Award, ExternalLink, Calendar, ChevronUp, X } from 'lucide-react';
+import { Button, Input, Textarea, GlassCard } from '../../components/ui';
 import { certificatesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/ui/Loader';
@@ -9,7 +9,7 @@ import Loader from '../../components/ui/Loader';
 const ManageCertificates = () => {
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
     const [editingCert, setEditingCert] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -38,7 +38,7 @@ const ManageCertificates = () => {
         }
     };
 
-    const handleOpenModal = (cert = null) => {
+    const handleOpenForm = (cert = null) => {
         if (cert) {
             setEditingCert(cert);
             setFormData({
@@ -63,7 +63,13 @@ const ManageCertificates = () => {
             });
         }
         setImageFile(null);
-        setModalOpen(true);
+        setFormOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setEditingCert(null);
     };
 
     const handleChange = (e) => {
@@ -97,7 +103,7 @@ const ManageCertificates = () => {
                 toast.success('Certificate created successfully');
             }
 
-            setModalOpen(false);
+            setFormOpen(false);
             fetchCertificates();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
@@ -130,10 +136,145 @@ const ManageCertificates = () => {
                         Validating your expertise and skills
                     </p>
                 </div>
-                <Button icon={Plus} onClick={() => handleOpenModal()} className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20">
-                    Add Certificate
+                <Button
+                    icon={formOpen ? ChevronUp : Plus}
+                    onClick={() => formOpen ? handleCloseForm() : handleOpenForm()}
+                    className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20"
+                >
+                    {formOpen ? 'Close Form' : 'Add Certificate'}
                 </Button>
             </div>
+
+            {/* Inline Collapsible Form */}
+            <AnimatePresence>
+                {formOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <GlassCard className="p-4 sm:p-6 lg:p-8 border-2 border-[rgb(var(--accent))]/30">
+                            {/* Form Header */}
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgb(var(--border))]">
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">
+                                        {editingCert ? 'Edit Certificate' : 'Add New Certificate'}
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))]">
+                                        {editingCert ? 'Update the certificate details below' : 'Fill in the details to add a new certificate'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseForm}
+                                    className="p-2 hover:bg-[rgb(var(--bg-secondary))] rounded-lg transition-colors"
+                                    aria-label="Close form"
+                                >
+                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                </button>
+                            </div>
+
+                            {/* Form Content */}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <Input
+                                    label="Certificate Name"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    placeholder="e.g. AWS Certified Solutions Architect"
+                                    required
+                                />
+
+                                <Input
+                                    label="Issuing Organization"
+                                    name="issuer"
+                                    value={formData.issuer}
+                                    onChange={handleChange}
+                                    placeholder="e.g. Amazon Web Services"
+                                    required
+                                />
+
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Issue Date"
+                                        type="date"
+                                        name="issueDate"
+                                        value={formData.issueDate}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    <Input
+                                        label="Expiry Date (Optional)"
+                                        type="date"
+                                        name="expiryDate"
+                                        value={formData.expiryDate}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Credential ID (Optional)"
+                                        name="credentialId"
+                                        value={formData.credentialId}
+                                        onChange={handleChange}
+                                        placeholder="e.g. ABC-123-XYZ"
+                                    />
+                                    <Input
+                                        label="Credential URL (Optional)"
+                                        name="credentialUrl"
+                                        value={formData.credentialUrl}
+                                        onChange={handleChange}
+                                        placeholder="https://..."
+                                        icon={ExternalLink}
+                                    />
+                                </div>
+
+                                <Textarea
+                                    label="Description (Optional)"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows={3}
+                                    placeholder="Brief details about this certification..."
+                                />
+
+                                <div className="p-4 rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
+                                    <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
+                                        Certificate Image / Logo
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setImageFile(e.target.files[0])}
+                                        className="w-full text-sm text-[rgb(var(--text-secondary))] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[rgb(var(--accent))]/10 file:text-[rgb(var(--accent))] hover:file:bg-[rgb(var(--accent))]/20"
+                                        required={!editingCert}
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleCloseForm}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="w-full sm:flex-1"
+                                        loading={submitting}
+                                    >
+                                        {editingCert ? 'Save Changes' : 'Add Certificate'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Certificates Grid */}
             {certificates.length > 0 ? (
@@ -191,7 +332,7 @@ const ManageCertificates = () => {
                                             variant="outline"
                                             size="sm"
                                             icon={Edit}
-                                            onClick={() => handleOpenModal(cert)}
+                                            onClick={() => handleOpenForm(cert)}
                                             className="flex-1"
                                         >
                                             Edit
@@ -214,112 +355,11 @@ const ManageCertificates = () => {
                     <p className="text-[rgb(var(--text-secondary))] text-lg mb-4">
                         No certificates yet. Add your first certificate!
                     </p>
-                    <Button icon={Plus} onClick={() => handleOpenModal()}>
+                    <Button icon={Plus} onClick={() => handleOpenForm()}>
                         Add Certificate
                     </Button>
                 </div>
             )}
-
-            {/* Add/Edit Modal */}
-            <Modal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title={editingCert ? 'Edit Certificate' : 'New Certificate'}
-                size="lg"
-            >
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <Input
-                        label="Certificate Name"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        placeholder="e.g. AWS Certified Solutions Architect"
-                        required
-                    />
-
-                    <Input
-                        label="Issuing Organization"
-                        name="issuer"
-                        value={formData.issuer}
-                        onChange={handleChange}
-                        placeholder="e.g. Amazon Web Services"
-                        required
-                    />
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Issue Date"
-                            type="date"
-                            name="issueDate"
-                            value={formData.issueDate}
-                            onChange={handleChange}
-                            required
-                        />
-
-                        <Input
-                            label="Expiry Date (Optional)"
-                            type="date"
-                            name="expiryDate"
-                            value={formData.expiryDate}
-                            onChange={handleChange}
-                        />
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Credential ID (Optional)"
-                            name="credentialId"
-                            value={formData.credentialId}
-                            onChange={handleChange}
-                            placeholder="e.g. ABC-123-XYZ"
-                        />
-
-                        <Input
-                            label="Credential URL (Optional)"
-                            name="credentialUrl"
-                            value={formData.credentialUrl}
-                            onChange={handleChange}
-                            placeholder="https://..."
-                            icon={ExternalLink}
-                        />
-                    </div>
-
-                    <Textarea
-                        label="Description (Optional)"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={3}
-                        placeholder="Brief details about this certification..."
-                    />
-
-                    <div className="p-4 rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
-                        <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
-                            Certificate Image / Logo
-                        </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setImageFile(e.target.files[0])}
-                            className="w-full text-sm text-[rgb(var(--text-secondary))] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[rgb(var(--accent))]/10 file:text-[rgb(var(--accent))] hover:file:bg-[rgb(var(--accent))]/20"
-                            required={!editingCert}
-                        />
-                    </div>
-
-                    <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
-                        <Button type="submit" className="flex-1" loading={submitting}>
-                            {editingCert ? 'Save Changes' : 'Add Certificate'}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setModalOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };

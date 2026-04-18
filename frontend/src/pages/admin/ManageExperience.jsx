@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Calendar, MapPin, Briefcase } from 'lucide-react';
-import { Button, Modal, Input, Textarea, GlassCard } from '../../components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Edit, Trash2, Calendar, MapPin, Briefcase, ChevronUp, X } from 'lucide-react';
+import { Button, Input, Textarea, GlassCard } from '../../components/ui';
 import { experienceAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/ui/Loader';
@@ -9,7 +9,7 @@ import Loader from '../../components/ui/Loader';
 const ManageExperience = () => {
     const [experiences, setExperiences] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
     const [editingExp, setEditingExp] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -38,7 +38,7 @@ const ManageExperience = () => {
         }
     };
 
-    const handleOpenModal = (exp = null) => {
+    const handleOpenForm = (exp = null) => {
         if (exp) {
             setEditingExp(exp);
             setFormData({
@@ -64,7 +64,13 @@ const ManageExperience = () => {
                 responsibilities: '',
             });
         }
-        setModalOpen(true);
+        setFormOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setEditingExp(null);
     };
 
     const handleChange = (e) => {
@@ -96,7 +102,7 @@ const ManageExperience = () => {
                 toast.success('Experience created successfully');
             }
 
-            setModalOpen(false);
+            setFormOpen(false);
             fetchExperiences();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
@@ -129,10 +135,149 @@ const ManageExperience = () => {
                         Track your professional journey
                     </p>
                 </div>
-                <Button icon={Plus} onClick={() => handleOpenModal()} className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20">
-                    Add Experience
+                <Button
+                    icon={formOpen ? ChevronUp : Plus}
+                    onClick={() => formOpen ? handleCloseForm() : handleOpenForm()}
+                    className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20"
+                >
+                    {formOpen ? 'Close Form' : 'Add Experience'}
                 </Button>
             </div>
+
+            {/* Inline Collapsible Form */}
+            <AnimatePresence>
+                {formOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <GlassCard className="p-4 sm:p-6 lg:p-8 border-2 border-[rgb(var(--accent))]/30">
+                            {/* Form Header */}
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgb(var(--border))]">
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">
+                                        {editingExp ? 'Edit Experience' : 'Add New Experience'}
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))]">
+                                        {editingExp ? 'Update the experience details below' : 'Fill in the details to add a new role'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseForm}
+                                    className="p-2 hover:bg-[rgb(var(--bg-secondary))] rounded-lg transition-colors"
+                                    aria-label="Close form"
+                                >
+                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                </button>
+                            </div>
+
+                            {/* Form Content */}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Job Title"
+                                        name="title"
+                                        value={formData.title}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Senior Frontend Engineer"
+                                        required
+                                    />
+                                    <Input
+                                        label="Company Name"
+                                        name="company"
+                                        value={formData.company}
+                                        onChange={handleChange}
+                                        placeholder="e.g. Google"
+                                        required
+                                    />
+                                </div>
+
+                                <Input
+                                    label="Location"
+                                    name="location"
+                                    value={formData.location}
+                                    onChange={handleChange}
+                                    placeholder="e.g. San Francisco, CA (Remote)"
+                                    icon={MapPin}
+                                />
+
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Start Date"
+                                        type="date"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    <Input
+                                        label="End Date"
+                                        type="date"
+                                        name="endDate"
+                                        value={formData.endDate}
+                                        onChange={handleChange}
+                                        disabled={formData.current}
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-[rgb(var(--border))]">
+                                    <input
+                                        type="checkbox"
+                                        name="current"
+                                        id="current"
+                                        checked={formData.current}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 rounded border-gray-300 text-[rgb(var(--accent))] focus:ring-[rgb(var(--accent))]"
+                                    />
+                                    <label htmlFor="current" className="text-sm font-medium cursor-pointer select-none">
+                                        I currently work here
+                                    </label>
+                                </div>
+
+                                <Textarea
+                                    label="Role Description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows={3}
+                                    placeholder="Brief summary of what you did..."
+                                    required
+                                />
+
+                                <Textarea
+                                    label="Key Responsibilities (One per line)"
+                                    name="responsibilities"
+                                    value={formData.responsibilities}
+                                    onChange={handleChange}
+                                    rows={5}
+                                    placeholder={`• Led a team of 5 developers\n• Reduced load times by 40%\n• Implemented CI/CD pipelines`}
+                                />
+
+                                <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleCloseForm}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="w-full sm:flex-1"
+                                        loading={submitting}
+                                    >
+                                        {editingExp ? 'Save Changes' : 'Add Experience'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Experiences List */}
             {experiences.length > 0 ? (
@@ -197,7 +342,7 @@ const ManageExperience = () => {
                                             variant="outline"
                                             size="sm"
                                             icon={Edit}
-                                            onClick={() => handleOpenModal(exp)}
+                                            onClick={() => handleOpenForm(exp)}
                                             className="flex-1 lg:flex-none justify-center"
                                         >
                                             Edit
@@ -223,118 +368,11 @@ const ManageExperience = () => {
                     <p className="text-[rgb(var(--text-secondary))] text-lg mb-4">
                         No experience yet. Add your first role!
                     </p>
-                    <Button icon={Plus} onClick={() => handleOpenModal()}>
+                    <Button icon={Plus} onClick={() => handleOpenForm()}>
                         Add Experience
                     </Button>
                 </div>
             )}
-
-            {/* Add/Edit Modal */}
-            <Modal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title={editingExp ? 'Edit Experience' : 'New Experience'}
-                size="lg"
-            >
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Job Title"
-                            name="title"
-                            value={formData.title}
-                            onChange={handleChange}
-                            placeholder="e.g. Senior Frontend Engineer"
-                            required
-                        />
-                        <Input
-                            label="Company Name"
-                            name="company"
-                            value={formData.company}
-                            onChange={handleChange}
-                            placeholder="e.g. Google"
-                            required
-                        />
-                    </div>
-
-                    <Input
-                        label="Location"
-                        name="location"
-                        value={formData.location}
-                        onChange={handleChange}
-                        placeholder="e.g. San Francisco, CA (Remote)"
-                    />
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Start Date"
-                            type="date"
-                            name="startDate"
-                            value={formData.startDate}
-                            onChange={handleChange}
-                            required
-                        />
-
-                        <Input
-                            label="End Date"
-                            type="date"
-                            name="endDate"
-                            value={formData.endDate}
-                            onChange={handleChange}
-                            disabled={formData.current}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3 bg-[rgb(var(--bg-secondary))]/50 rounded-lg">
-                        <input
-                            type="checkbox"
-                            name="current"
-                            id="current"
-                            checked={formData.current}
-                            onChange={handleChange}
-                            className="w-5 h-5 rounded border-gray-300 text-[rgb(var(--accent))] focus:ring-[rgb(var(--accent))]"
-                        />
-                        <label htmlFor="current" className="text-sm font-medium cursor-pointer select-none">
-                            I currently work here
-                        </label>
-                    </div>
-
-                    <Textarea
-                        label="Role Description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={3}
-                        placeholder="Brief summary of what you did..."
-                        required
-                    />
-
-                    <Textarea
-                        label="Key Responsibilities (One per line)"
-                        name="responsibilities"
-                        value={formData.responsibilities}
-                        onChange={handleChange}
-                        rows={5}
-                        placeholder="• Led a team of 5 developers&#10;• Reduced load times by 40%&#10;• Implemented CI/CD pipelines"
-                    />
-
-                    <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
-                        <Button
-                            type="submit"
-                            className="flex-1"
-                            loading={submitting}
-                        >
-                            {editingExp ? 'Save Changes' : 'Add Experience'}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setModalOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };
