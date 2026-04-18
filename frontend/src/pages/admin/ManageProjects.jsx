@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, Trash2, ExternalLink, Github, Star } from 'lucide-react';
-import { Button, Modal, Input, Textarea, GlassCard } from '../../components/ui';
+import { Plus, Edit, Trash2, ExternalLink, Github, Star, ChevronUp, X } from 'lucide-react';
+import { Button, Input, Textarea, GlassCard } from '../../components/ui';
 import { projectsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/ui/Loader';
@@ -9,7 +9,7 @@ import Loader from '../../components/ui/Loader';
 const ManageProjects = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -39,7 +39,7 @@ const ManageProjects = () => {
         }
     };
 
-    const handleOpenModal = (project = null) => {
+    const handleOpenForm = (project = null) => {
         if (project) {
             setEditingProject(project);
             setFormData({
@@ -66,7 +66,13 @@ const ManageProjects = () => {
             });
         }
         setImageFile(null);
-        setModalOpen(true);
+        setFormOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setEditingProject(null);
     };
 
     const handleChange = (e) => {
@@ -107,7 +113,7 @@ const ManageProjects = () => {
                 toast.success('Project created successfully');
             }
 
-            setModalOpen(false);
+            setFormOpen(false);
             fetchProjects();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
@@ -140,10 +146,177 @@ const ManageProjects = () => {
                         Showcase your best work to the world
                     </p>
                 </div>
-                <Button icon={Plus} onClick={() => handleOpenModal()} className="w-full sm:w-auto shadow-xl shadow-[rgb(var(--accent))]/20">
-                    Add New Project
+                <Button 
+                    icon={formOpen ? ChevronUp : Plus} 
+                    onClick={() => formOpen ? handleCloseForm() : handleOpenForm()} 
+                    className="w-full sm:w-auto shadow-xl shadow-[rgb(var(--accent))]/20"
+                >
+                    {formOpen ? 'Close Form' : 'Add New Project'}
                 </Button>
             </div>
+
+            {/* Add/Edit Form - Collapsible at Top */}
+            <AnimatePresence>
+                {formOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <GlassCard className="p-4 sm:p-6 lg:p-8 border-2 border-[rgb(var(--accent))]/30">
+                            {/* Form Header */}
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgb(var(--border))]">
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">
+                                        {editingProject ? 'Edit Project' : 'Add New Project'}
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))]">
+                                        {editingProject ? 'Update your project details below' : 'Fill in the details to add a new project'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseForm}
+                                    className="p-2 hover:bg-[rgb(var(--bg-secondary))] rounded-lg transition-colors"
+                                    aria-label="Close form"
+                                >
+                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                </button>
+                            </div>
+
+                            {/* Form Content */}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <Input
+                                    label="Project Title"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="e.g. E-Commerce Platform"
+                                />
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
+                                            Category
+                                        </label>
+                                        <select
+                                            name="category"
+                                            value={formData.category}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2.5 glass rounded-lg text-[rgb(var(--text-primary))] outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]"
+                                        >
+                                            <option value="web">Web Development</option>
+                                            <option value="mobile">Mobile App</option>
+                                            <option value="fullstack">Full Stack</option>
+                                            <option value="design">UI/UX Design</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <Input
+                                        label="Technologies (comma separated)"
+                                        name="technologies"
+                                        value={formData.technologies}
+                                        onChange={handleChange}
+                                        placeholder="React, Node.js, MongoDB"
+                                    />
+                                </div>
+
+                                <Textarea
+                                    label="Short Description (Card View)"
+                                    name="shortDescription"
+                                    value={formData.shortDescription}
+                                    onChange={handleChange}
+                                    rows={2}
+                                    placeholder="A brief catchy summary..."
+                                />
+
+                                <Textarea
+                                    label="Full Description (Detail View)"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    rows={5}
+                                    required
+                                    placeholder="Detailed explanation of features, challenges, and solutions..."
+                                />
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <Input
+                                        label="GitHub Repo"
+                                        name="githubLink"
+                                        value={formData.githubLink}
+                                        onChange={handleChange}
+                                        icon={Github}
+                                        placeholder="https://github.com/..."
+                                    />
+
+                                    <Input
+                                        label="Live Demo URL"
+                                        name="liveLink"
+                                        value={formData.liveLink}
+                                        onChange={handleChange}
+                                        icon={ExternalLink}
+                                        placeholder="https://myproject.com"
+                                    />
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
+                                    <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
+                                        Project Thumbnail
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="w-full text-sm text-[rgb(var(--text-secondary))]
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-full file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-[rgb(var(--accent))]/10 file:text-[rgb(var(--accent))]
+                                            hover:file:bg-[rgb(var(--accent))]/20"
+                                        required={!editingProject}
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-[rgb(var(--border))]">
+                                    <input
+                                        type="checkbox"
+                                        name="featured"
+                                        id="featured"
+                                        checked={formData.featured}
+                                        onChange={handleChange}
+                                        className="w-5 h-5 rounded border-gray-300 text-[rgb(var(--accent))] focus:ring-[rgb(var(--accent))]"
+                                    />
+                                    <label htmlFor="featured" className="text-sm font-medium cursor-pointer select-none">
+                                        Mark as Featured Project (Shows on Home)
+                                    </label>
+                                </div>
+
+                                <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleCloseForm}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="w-full sm:flex-1"
+                                        loading={submitting}
+                                    >
+                                        {editingProject ? 'Save Changes' : 'Create Project'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Projects Grid */}
             {projects.length > 0 ? (
@@ -231,7 +404,7 @@ const ManageProjects = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 icon={Edit}
-                                                onClick={() => handleOpenModal(project)}
+                                                onClick={() => handleOpenForm(project)}
                                                 className="flex-1"
                                             >
                                                 Edit
@@ -254,146 +427,13 @@ const ManageProjects = () => {
                     <p className="text-[rgb(var(--text-secondary))] text-lg mb-4">
                         No projects yet. Add your first project!
                     </p>
-                    <Button icon={Plus} onClick={() => handleOpenModal()}>
+                    <Button icon={Plus} onClick={() => handleOpenForm()}>
                         Add Project
                     </Button>
                 </div>
             )}
 
-            {/* Add/Edit Modal */}
-            <Modal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title={editingProject ? 'Edit Project' : 'New Project'}
-                size="lg"
-            >
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <Input
-                        label="Project Title"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        required
-                        placeholder="e.g. E-Commerce Platform"
-                    />
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
-                                Category
-                            </label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 glass rounded-lg text-[rgb(var(--text-primary))] outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]"
-                            >
-                                <option value="web">Web Development</option>
-                                <option value="mobile">Mobile App</option>
-                                <option value="fullstack">Full Stack</option>
-                                <option value="design">UI/UX Design</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <Input
-                            label="Technologies (comma separated)"
-                            name="technologies"
-                            value={formData.technologies}
-                            onChange={handleChange}
-                            placeholder="React, Node.js, MongoDB"
-                        />
-                    </div>
-
-                    <Textarea
-                        label="Short Description (Card View)"
-                        name="shortDescription"
-                        value={formData.shortDescription}
-                        onChange={handleChange}
-                        rows={2}
-                        placeholder="A brief catchy summary..."
-                    />
-
-                    <Textarea
-                        label="Full Description (Detail View)"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        rows={5}
-                        required
-                        placeholder="Detailed explanation of features, challenges, and solutions..."
-                    />
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <Input
-                            label="GitHub Repo"
-                            name="githubLink"
-                            value={formData.githubLink}
-                            onChange={handleChange}
-                            icon={Github}
-                            placeholder="https://github.com/..."
-                        />
-
-                        <Input
-                            label="Live Demo URL"
-                            name="liveLink"
-                            value={formData.liveLink}
-                            onChange={handleChange}
-                            icon={ExternalLink}
-                            placeholder="https://myproject.com"
-                        />
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-[rgb(var(--bg-secondary))]/50 border border-[rgb(var(--border))]">
-                        <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
-                            Project Thumbnail
-                        </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="w-full text-sm text-[rgb(var(--text-secondary))]
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-full file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-[rgb(var(--accent))]/10 file:text-[rgb(var(--accent))]
-                                hover:file:bg-[rgb(var(--accent))]/20"
-                            required={!editingProject}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-[rgb(var(--border))]">
-                        <input
-                            type="checkbox"
-                            name="featured"
-                            id="featured"
-                            checked={formData.featured}
-                            onChange={handleChange}
-                            className="w-5 h-5 rounded border-gray-300 text-[rgb(var(--accent))] focus:ring-[rgb(var(--accent))]"
-                        />
-                        <label htmlFor="featured" className="text-sm font-medium cursor-pointer select-none">
-                            Mark as Featured Project (Shows on Home)
-                        </label>
-                    </div>
-
-                    <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
-                        <Button
-                            type="submit"
-                            className="flex-1"
-                            loading={submitting}
-                        >
-                            {editingProject ? 'Save Changes' : 'Create Project'}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setModalOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };

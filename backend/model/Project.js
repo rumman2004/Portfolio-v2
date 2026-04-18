@@ -27,7 +27,7 @@ const projectSchema = new mongoose.Schema({
     }],
     category: {
         type: String,
-        enum: ['web', 'mobile', 'fullstack', 'other'],
+        enum: ['web', 'mobile', 'fullstack', 'design', 'other'],
         default: 'web'
     },
     githubLink: {

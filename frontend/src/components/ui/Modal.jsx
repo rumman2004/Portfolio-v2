@@ -44,10 +44,10 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
                     {/* Modal Container */}
                     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                            transition={{ type: "spring", duration: 0.5 }}
+                            initial={{ opacity: 0, y: "100vh" }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: "100vh" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             className={`
                                 w-full ${sizes[size]} max-h-[90vh] overflow-hidden rounded-3xl
                                 

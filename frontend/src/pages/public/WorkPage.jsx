@@ -36,7 +36,7 @@ const WorkPage = () => {
         }
     };
 
-    const categories = ['all', 'web', 'mobile', 'fullstack', 'other'];
+    const categories = ['all', 'web', 'mobile', 'fullstack', 'design', 'other'];
 
     const filteredProjects = filter === 'all'
         ? projects
