@@ -171,7 +171,7 @@ const ManageSkills = () => {
         return cat ? cat.label : catValue.replace(/_/g, ' & ');
     };
 
-    if (loading) return <Loader fullScreen size="xl" />;
+    if (loading) return <Loader fullScreen size="lg" />;
 
     return (
         <>

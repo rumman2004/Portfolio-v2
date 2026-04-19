@@ -111,7 +111,7 @@ const ManageSocials = () => {
         return socialIconMap[key] || socialIconMap.other || socialIconMap.github;
     };
 
-    if (loading) return <Loader fullScreen size="xl" />;
+    if (loading) return <Loader fullScreen size="lg" />;
 
     return (
         <div className="space-y-8 pb-8">

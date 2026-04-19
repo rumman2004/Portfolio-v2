@@ -185,7 +185,7 @@ const EditAbout = () => {
     } finally { setSubmitting(false); }
   };
 
-  if (loading) return <Loader fullScreen size="xl" />;
+  if (loading) return <Loader fullScreen size="lg" />;
 
   return (
     <div ref={wrapRef} className="space-y-6 max-w-4xl mx-auto" style={{ fontFamily: "'Syne', sans-serif" }}>

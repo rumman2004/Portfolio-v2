@@ -124,7 +124,7 @@ const ManageCertificates = () => {
         }
     };
 
-    if (loading) return <Loader fullScreen size="xl" />;
+    if (loading) return <Loader fullScreen size="lg" />;
 
     return (
         <div className="space-y-8 pb-8">

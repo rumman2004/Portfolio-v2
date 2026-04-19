@@ -118,7 +118,7 @@ const Dashboard = () => {
     );
   }, [loading, stats]);
 
-  if (loading) return <Loader fullScreen size="xl" />;
+  if (loading) return <Loader fullScreen size="lg" />;
 
   const responsePct = stats.contacts.total > 0
     ? Math.round((stats.contacts.replied / stats.contacts.total) * 100)
