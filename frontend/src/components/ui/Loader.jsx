@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { useTheme } from '../../context/ThemeContext';
 
 const SPIRAL_CONFIG = {
     rotate: false,
@@ -28,9 +27,6 @@ const SPIRAL_CONFIG = {
 };
 
 const Loader = ({ size = 'md', fullScreen = false }) => {
-    const { theme } = useTheme(); // kept in case you want future color control
-    const isDark = theme === 'dark';
-
     const groupRef = useRef(null);
     const pathRef = useRef(null);
     const particlesRef = useRef([]);
@@ -40,7 +36,8 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
         const path = pathRef.current;
         const particles = particlesRef.current;
 
-        if (!group || !path || !particles.length) return;
+        // ✅ safer check (don’t block rendering)
+        if (!group || !path) return;
 
         let requestRef;
         const startedAt = performance.now();
@@ -48,55 +45,81 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
         const normalizeProgress = (progress) => ((progress % 1) + 1) % 1;
 
         const getDetailScale = (time) => {
-            const pulseProgress = (time % SPIRAL_CONFIG.pulseDurationMs) / SPIRRAL_CONFIG.pulseDurationMs;
+            const pulseProgress =
+                (time % SPIRAL_CONFIG.pulseDurationMs) /
+                SPIRAL_CONFIG.pulseDurationMs;
+
             const pulseAngle = pulseProgress * Math.PI * 2;
+
             return 0.52 + ((Math.sin(pulseAngle + 0.55) + 1) / 2) * 0.48;
         };
 
         const getRotation = (time) => {
             if (!SPIRAL_CONFIG.rotate) return 0;
-            return -((time % SPIRAL_CONFIG.rotationDurationMs) / SPIRAL_CONFIG.rotationDurationMs) * 360;
+            return -(
+                (time % SPIRAL_CONFIG.rotationDurationMs) /
+                SPIRAL_CONFIG.rotationDurationMs
+            ) * 360;
         };
 
         const buildPath = (detailScale, steps = 480) => {
             return Array.from({ length: steps + 1 }, (_, index) => {
                 const point = SPIRAL_CONFIG.point(index / steps, detailScale);
-                return `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+                return `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(
+                    2
+                )} ${point.y.toFixed(2)}`;
             }).join(' ');
         };
 
         const getParticle = (index, progress, detailScale) => {
-            const tailOffset = index / (SPIRAL_CONFIG.particleCount - 1);
+            const tailOffset =
+                index / (SPIRAL_CONFIG.particleCount - 1);
+
             const point = SPIRAL_CONFIG.point(
                 normalizeProgress(progress - tailOffset * SPIRAL_CONFIG.trailSpan),
                 detailScale
             );
+
             const fade = Math.pow(1 - tailOffset, 0.56);
+
             return {
                 x: point.x,
                 y: point.y,
-                radius: 0.9 + fade * 2.7,
-                opacity: 0.04 + fade * 0.96,
+                radius: 2 + fade * 3.5, // ✅ boosted visibility
+                opacity: 0.2 + fade * 0.8, // ✅ more visible
             };
         };
 
-        path.setAttribute('stroke-width', String(SPIRAL_CONFIG.strokeWidth));
+        path.setAttribute(
+            'stroke-width',
+            String(SPIRAL_CONFIG.strokeWidth)
+        );
 
         const renderFrame = (now) => {
             const time = now - startedAt;
-            const progress = (time % SPIRAL_CONFIG.durationMs) / SPIRAL_CONFIG.durationMs;
+
+            const progress =
+                (time % SPIRAL_CONFIG.durationMs) /
+                SPIRAL_CONFIG.durationMs;
+
             const detailScale = getDetailScale(time);
 
-            group.setAttribute('transform', `rotate(${getRotation(time)} 50 50)`);
+            group.setAttribute(
+                'transform',
+                `rotate(${getRotation(time)} 50 50)`
+            );
+
             path.setAttribute('d', buildPath(detailScale));
 
             particles.forEach((node, index) => {
                 if (!node) return;
-                const particle = getParticle(index, progress, detailScale);
-                node.setAttribute('cx', particle.x.toFixed(2));
-                node.setAttribute('cy', particle.y.toFixed(2));
-                node.setAttribute('r', particle.radius.toFixed(2));
-                node.setAttribute('opacity', particle.opacity.toFixed(3));
+
+                const p = getParticle(index, progress, detailScale);
+
+                node.setAttribute('cx', p.x.toFixed(2));
+                node.setAttribute('cy', p.y.toFixed(2));
+                node.setAttribute('r', p.radius.toFixed(2));
+                node.setAttribute('opacity', p.opacity.toFixed(3));
             });
 
             requestRef = requestAnimationFrame(renderFrame);
@@ -108,33 +131,45 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
     }, []);
 
     const sizes = {
-        sm: 'w-8 h-8',
-        md: 'w-14 h-14',
-        lg: 'w-20 h-20',
-        xl: 'w-32 h-32',
+        sm: 40,
+        md: 70,
+        lg: 100,
+        xl: 140,
     };
 
     const loader = (
-        <div className={`flex items-center justify-center ${sizes[size]}`}>
+        <div
+            style={{
+                width: sizes[size],
+                height: sizes[size],
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}
+        >
             <svg
                 viewBox="0 0 100 100"
-                fill="none"
-                aria-hidden="true"
-                className="w-full h-full overflow-visible text-blue-500"
+                width="100%"
+                height="100%"
+                style={{ overflow: 'visible' }}
             >
                 <g ref={groupRef}>
                     <path
                         ref={pathRef}
-                        stroke="currentColor"
+                        stroke="#3b82f6" // ✅ always visible blue
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        opacity="0.1"
+                        opacity="0.5"
                     />
-                    {Array.from({ length: SPIRAL_CONFIG.particleCount }).map((_, i) => (
+                    {Array.from({
+                        length: SPIRAL_CONFIG.particleCount,
+                    }).map((_, i) => (
                         <circle
                             key={i}
-                            ref={(el) => (particlesRef.current[i] = el)}
-                            fill="currentColor"
+                            ref={(el) =>
+                                (particlesRef.current[i] = el)
+                            }
+                            fill="#3b82f6"
                         />
                     ))}
                 </g>
@@ -144,17 +179,23 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
 
     if (fullScreen) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.4)',
+                    zIndex: 9999,
+                }}
+            >
                 {loader}
             </div>
         );
     }
 
-    return (
-        <div className="flex items-center justify-center p-4">
-            {loader}
-        </div>
-    );
+    return loader;
 };
 
 export default Loader;
