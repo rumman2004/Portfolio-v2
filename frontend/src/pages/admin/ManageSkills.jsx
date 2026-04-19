@@ -34,6 +34,20 @@ const ManageSkills = () => {
         { value: 'devops', label: 'DevOps', icon: Cloud },
     ];
 
+    const iconCategories = {
+        'Languages': ['html', 'css', 'javascript', 'typescript', 'python', 'java', 'c', 'c++'],
+        'Frameworks & Libraries': ['react', 'nodejs', 'express', 'tailwind', 'nextjs'],
+        'Databases': ['mongodb', 'mysql', 'postgresql', 'redis'],
+        'Dev Tools': ['git', 'github', 'docker', 'figma', 'vscode', 'postman', 'webpack', 'npm', 'yarn', 'webstorm', 'linux', 'supabase', 'vercel']
+    };
+
+    const formatIconName = (name) => {
+        const customNames = {
+            'html': 'HTML', 'css': 'CSS', 'javascript': 'JavaScript', 'typescript': 'TypeScript', 'nodejs': 'Node.js', 'nextjs': 'Next.js', 'mongodb': 'MongoDB', 'mysql': 'MySQL', 'postgresql': 'PostgreSQL', 'github': 'GitHub', 'vscode': 'VS Code', 'npm': 'npm', 'c++': 'C++', 'c': 'C'
+        };
+        return customNames[name] || name.charAt(0).toUpperCase() + name.slice(1);
+    };
+
     useEffect(() => {
         fetchSkills();
     }, []);
@@ -390,18 +404,13 @@ const ManageSkills = () => {
                                                         aria-label="Select skill icon"
                                                     >
                                                         <option value="">-- Select Icon --</option>
-                                                        <optgroup label="Popular">
-                                                            {['react', 'javascript', 'html', 'css', 'python', 'java', 'git', 'docker'].map(i => (
-                                                                <option key={i} value={i}>{i.charAt(0).toUpperCase() + i.slice(1)}</option>
-                                                            ))}
-                                                        </optgroup>
-                                                        <optgroup label="All Icons">
-                                                            {Object.keys(skillIconMap).filter(key =>
-                                                                !['react', 'javascript', 'html', 'css', 'python', 'java', 'git', 'docker'].includes(key)
-                                                            ).sort().map(key => (
-                                                                <option key={key} value={key}>{key.charAt(0).toUpperCase() + key.slice(1)}</option>
-                                                            ))}
-                                                        </optgroup>
+                                                        {Object.entries(iconCategories).map(([category, icons]) => (
+                                                            <optgroup key={category} label={category}>
+                                                                {icons.map(key => (
+                                                                    <option key={key} value={key}>{formatIconName(key)}</option>
+                                                                ))}
+                                                            </optgroup>
+                                                        ))}
                                                     </select>
                                                 ) : (
                                                     <input

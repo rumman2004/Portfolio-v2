@@ -12,7 +12,7 @@ const skillSchema = new mongoose.Schema({
         required: [true, 'Category is required'],
         lowercase: true,
         enum: {
-            values: ['frontend', 'backend', 'database', 'tools', 'languages', 'other'],
+            values: ['frontend', 'backend', 'database', 'tools', 'languages', 'devops', 'other'],
             message: '{VALUE} is not a valid category'
         },
         default: 'other'
