@@ -161,7 +161,7 @@ const WorkPage = () => {
                             style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', opacity: 0 }}
                         >
                             <span className="work-mono" style={{ fontWeight: 300, fontStyle: 'italic', fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgb(var(--accent))', opacity: 0.8 }}>
-                                04 /
+                                03 /
                             </span>
                             <span className="work-mono" style={{ fontWeight: 400, fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgb(var(--text-secondary))' }}>
                                 Selected Works

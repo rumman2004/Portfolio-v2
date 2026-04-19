@@ -147,7 +147,7 @@ const ContactPage = () => {
                                 style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', opacity: 0 }}
                             >
                                 <span className="contact-mono" style={{ fontWeight: 300, fontStyle: 'italic', fontSize: '0.6rem', letterSpacing: '0.12em', color: 'rgb(var(--accent))', opacity: 0.8 }}>
-                                    05 /
+                                    04 /
                                 </span>
                                 <span className="contact-mono" style={{ fontWeight: 400, fontSize: '0.6rem', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgb(var(--text-secondary))' }}>
                                     Get In Touch
