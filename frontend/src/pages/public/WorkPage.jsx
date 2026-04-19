@@ -120,7 +120,7 @@ const WorkPage = () => {
     const categories = ['all', 'web', 'mobile', 'fullstack', 'design', 'other'];
     const filteredProjects = filter === 'all' ? projects : projects.filter(p => p.category === filter);
 
-    if (loading) return <Loader fullScreen size="xl" />;
+    if (loading) return <Loader fullScreen size="lg" />;
 
     return (
         <>
