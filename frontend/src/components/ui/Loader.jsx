@@ -1,32 +1,41 @@
 import React, { useEffect, useRef } from 'react';
 
-const SPIRAL_CONFIG = {
-    rotate: false,
-    particleCount: 103,
-    trailSpan: 0.43,
-    durationMs: 6800,
-    rotationDurationMs: 28500,
-    pulseDurationMs: 6800,
-    strokeWidth: 4.3,
-    searchTurns: 4,
-    searchBaseRadius: 8,
-    searchRadiusAmp: 11.3,
-    searchPulse: 1.4,
-    searchScale: 0.75,
+const ROSE_CONFIG = {
+    rotate: true,
+    particleCount: 140,
+    trailSpan: 0.23,
+    durationMs: 9400,
+    rotationDurationMs: 55500,
+    pulseDurationMs: 8600,
+    strokeWidth: 2.5,
+
+    // Rose params
+    roseA: 11.1,
+    roseABoost: 1.4,
+    roseBreathBase: 1.1,
+    roseBreathBoost: 0.53,
+    roseK: 4,
+    roseScale: 2,
+
     point(progress, detailScale) {
         const t = progress * Math.PI * 2;
-        const angle = t * this.searchTurns;
-        const radius =
-            this.searchBaseRadius +
-            (1 - Math.cos(t)) * (this.searchRadiusAmp + detailScale * this.searchPulse);
+
+        const a = this.roseA + detailScale * this.roseABoost;
+        const k = Math.round(this.roseK);
+
+        const r =
+            a *
+            (this.roseBreathBase + detailScale * this.roseBreathBoost) *
+            Math.cos(k * t);
+
         return {
-            x: 50 + Math.cos(angle) * radius * this.searchScale,
-            y: 50 + Math.sin(angle) * radius * this.searchScale,
+            x: 50 + Math.cos(t) * r * this.roseScale,
+            y: 50 + Math.sin(t) * r * this.roseScale,
         };
     },
 };
 
-const Loader = ({ size = 'md', fullScreen = false }) => {
+const Loader = ({ size = 100, fullScreen = false }) => {
     const groupRef = useRef(null);
     const pathRef = useRef(null);
     const particlesRef = useRef([]);
@@ -34,141 +43,117 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
     useEffect(() => {
         const group = groupRef.current;
         const path = pathRef.current;
-        const particles = particlesRef.current;
 
-        // ✅ safer check (don’t block rendering)
         if (!group || !path) return;
 
-        let requestRef;
-        const startedAt = performance.now();
+        const particles = particlesRef.current;
 
-        const normalizeProgress = (progress) => ((progress % 1) + 1) % 1;
+        let raf;
+        const start = performance.now();
+
+        const normalize = (p) => ((p % 1) + 1) % 1;
 
         const getDetailScale = (time) => {
-            const pulseProgress =
-                (time % SPIRAL_CONFIG.pulseDurationMs) /
-                SPIRAL_CONFIG.pulseDurationMs;
+            const pulse =
+                (time % ROSE_CONFIG.pulseDurationMs) /
+                ROSE_CONFIG.pulseDurationMs;
 
-            const pulseAngle = pulseProgress * Math.PI * 2;
-
-            return 0.52 + ((Math.sin(pulseAngle + 0.55) + 1) / 2) * 0.48;
+            return 0.52 + ((Math.sin(pulse * Math.PI * 2 + 0.55) + 1) / 2) * 0.48;
         };
 
         const getRotation = (time) => {
-            if (!SPIRAL_CONFIG.rotate) return 0;
+            if (!ROSE_CONFIG.rotate) return 0;
             return -(
-                (time % SPIRAL_CONFIG.rotationDurationMs) /
-                SPIRAL_CONFIG.rotationDurationMs
+                (time % ROSE_CONFIG.rotationDurationMs) /
+                ROSE_CONFIG.rotationDurationMs
             ) * 360;
         };
 
         const buildPath = (detailScale, steps = 480) => {
-            return Array.from({ length: steps + 1 }, (_, index) => {
-                const point = SPIRAL_CONFIG.point(index / steps, detailScale);
-                return `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(
-                    2
-                )} ${point.y.toFixed(2)}`;
+            return Array.from({ length: steps + 1 }, (_, i) => {
+                const p = ROSE_CONFIG.point(i / steps, detailScale);
+                return `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
             }).join(' ');
         };
 
-        const getParticle = (index, progress, detailScale) => {
-            const tailOffset =
-                index / (SPIRAL_CONFIG.particleCount - 1);
+        const getParticle = (i, progress, detailScale) => {
+            const tail = i / (ROSE_CONFIG.particleCount - 1);
 
-            const point = SPIRAL_CONFIG.point(
-                normalizeProgress(progress - tailOffset * SPIRAL_CONFIG.trailSpan),
+            const p = ROSE_CONFIG.point(
+                normalize(progress - tail * ROSE_CONFIG.trailSpan),
                 detailScale
             );
 
-            const fade = Math.pow(1 - tailOffset, 0.56);
+            const fade = Math.pow(1 - tail, 0.56);
 
             return {
-                x: point.x,
-                y: point.y,
-                radius: 2 + fade * 3.5, // ✅ boosted visibility
-                opacity: 0.2 + fade * 0.8, // ✅ more visible
+                x: p.x,
+                y: p.y,
+                r: 1 + fade * 2.5,
+                o: 0.05 + fade * 0.95,
             };
         };
 
-        path.setAttribute(
-            'stroke-width',
-            String(SPIRAL_CONFIG.strokeWidth)
-        );
+        path.setAttribute('stroke-width', ROSE_CONFIG.strokeWidth);
 
-        const renderFrame = (now) => {
-            const time = now - startedAt;
+        const loop = (now) => {
+            const time = now - start;
 
             const progress =
-                (time % SPIRAL_CONFIG.durationMs) /
-                SPIRAL_CONFIG.durationMs;
+                (time % ROSE_CONFIG.durationMs) /
+                ROSE_CONFIG.durationMs;
 
-            const detailScale = getDetailScale(time);
+            const detail = getDetailScale(time);
 
             group.setAttribute(
                 'transform',
                 `rotate(${getRotation(time)} 50 50)`
             );
 
-            path.setAttribute('d', buildPath(detailScale));
+            path.setAttribute('d', buildPath(detail));
 
-            particles.forEach((node, index) => {
+            particles.forEach((node, i) => {
                 if (!node) return;
 
-                const p = getParticle(index, progress, detailScale);
+                const p = getParticle(i, progress, detail);
 
-                node.setAttribute('cx', p.x.toFixed(2));
-                node.setAttribute('cy', p.y.toFixed(2));
-                node.setAttribute('r', p.radius.toFixed(2));
-                node.setAttribute('opacity', p.opacity.toFixed(3));
+                node.setAttribute('cx', p.x);
+                node.setAttribute('cy', p.y);
+                node.setAttribute('r', p.r);
+                node.setAttribute('opacity', p.o);
             });
 
-            requestRef = requestAnimationFrame(renderFrame);
+            raf = requestAnimationFrame(loop);
         };
 
-        requestRef = requestAnimationFrame(renderFrame);
+        raf = requestAnimationFrame(loop);
 
-        return () => cancelAnimationFrame(requestRef);
+        return () => cancelAnimationFrame(raf);
     }, []);
-
-    const sizes = {
-        sm: 40,
-        md: 70,
-        lg: 100,
-        xl: 140,
-    };
 
     const loader = (
         <div
             style={{
-                width: sizes[size],
-                height: sizes[size],
+                width: size,
+                height: size,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
             }}
         >
-            <svg
-                viewBox="0 0 100 100"
-                width="100%"
-                height="100%"
-                style={{ overflow: 'visible' }}
-            >
+            <svg viewBox="0 0 100 100" width="100%" height="100%">
                 <g ref={groupRef}>
                     <path
                         ref={pathRef}
-                        stroke="#3b82f6" // ✅ always visible blue
+                        stroke="#3b82f6"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        opacity="0.5"
+                        opacity="0.15"
                     />
-                    {Array.from({
-                        length: SPIRAL_CONFIG.particleCount,
-                    }).map((_, i) => (
+                    {Array.from({ length: ROSE_CONFIG.particleCount }).map((_, i) => (
                         <circle
                             key={i}
-                            ref={(el) =>
-                                (particlesRef.current[i] = el)
-                            }
+                            ref={(el) => (particlesRef.current[i] = el)}
                             fill="#3b82f6"
                         />
                     ))}
@@ -186,7 +171,7 @@ const Loader = ({ size = 'md', fullScreen = false }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.4)',
+                    background: '#050505',
                     zIndex: 9999,
                 }}
             >
