@@ -306,7 +306,7 @@ const AboutPage = () => {
         hiddenRight: { x: '120%',  scale: 0.4,  opacity: 0,   zIndex: 10, rotateY: -35, filter: 'blur(4px)',  transition: { duration: 0.7, ease: [0.645,0.045,0.355,1] } },
     };
 
-    if (loading) return <Loader fullScreen size="xl" />;
+    if (loading) return <Loader fullScreen size="lg" />;
 
     const marqueeGroups = [...skillGroups, ...skillGroups];
 
