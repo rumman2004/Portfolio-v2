@@ -296,7 +296,7 @@ export default function Skills() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
             {skillGroups.map((group, index) => {
               const direction = index % 2 === 0 ? 1 : -1;
-              const speed     = 30 + (index % 3) * 10; // 30 / 40 / 50 px/s alternating
+              const speed     = 30 + (index % 3) * 30; // 30 / 40 / 50 px/s alternating
 
               return (
                 <div
