@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import { Button, Modal, Input, GlassCard, Badge } from '../../components/ui';
+import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink, ChevronUp, X } from 'lucide-react';
+import { Button, Input, GlassCard, Badge } from '../../components/ui';
 import { socialsAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 import Loader from '../../components/ui/Loader';
@@ -10,7 +10,7 @@ import { socialIconMap } from '../../components/icons/SocialIcons';
 const ManageSocials = () => {
     const [socials, setSocials] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
     const [editingSocial, setEditingSocial] = useState(null);
     const [formData, setFormData] = useState({
         platform: 'github',
@@ -34,7 +34,7 @@ const ManageSocials = () => {
         }
     };
 
-    const handleOpenModal = (social = null) => {
+    const handleOpenForm = (social = null) => {
         if (social) {
             setEditingSocial(social);
             setFormData({
@@ -50,7 +50,13 @@ const ManageSocials = () => {
                 username: '',
             });
         }
-        setModalOpen(true);
+        setFormOpen(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCloseForm = () => {
+        setFormOpen(false);
+        setEditingSocial(null);
     };
 
     const handleChange = (e) => {
@@ -73,7 +79,7 @@ const ManageSocials = () => {
                 toast.success('Social link created successfully');
             }
 
-            setModalOpen(false);
+            setFormOpen(false);
             fetchSocials();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
@@ -123,10 +129,125 @@ const ManageSocials = () => {
                         Manage your social media presence
                     </p>
                 </div>
-                <Button icon={Plus} onClick={() => handleOpenModal()} className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20">
-                    Add Link
+                <Button 
+                    icon={formOpen ? ChevronUp : Plus} 
+                    onClick={() => formOpen ? handleCloseForm() : handleOpenForm()} 
+                    className="w-full sm:w-auto shadow-lg shadow-[rgb(var(--accent))]/20"
+                >
+                    {formOpen ? 'Close Form' : 'Add Link'}
                 </Button>
             </div>
+
+            {/* Inline Collapsible Form */}
+            <AnimatePresence>
+                {formOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                    >
+                        <GlassCard className="p-4 sm:p-6 lg:p-8 border-2 border-[rgb(var(--accent))]/30">
+                            {/* Form Header */}
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgb(var(--border))]">
+                                <div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">
+                                        {editingSocial ? 'Edit Link' : 'Add New Link'}
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-[rgb(var(--text-secondary))]">
+                                        {editingSocial ? 'Update the social link details below' : 'Fill in the details to add a new social link'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCloseForm}
+                                    className="p-2 hover:bg-[rgb(var(--bg-secondary))] rounded-lg transition-colors"
+                                    aria-label="Close form"
+                                >
+                                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                                </button>
+                            </div>
+
+                            {/* Form Content */}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
+                                        Platform
+                                    </label>
+                                    <select
+                                        name="platform"
+                                        value={formData.platform}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2.5 glass rounded-lg text-[rgb(var(--text-primary))] outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]"
+                                    >
+                                        <option value="github">GitHub</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="twitter">X (Twitter)</option>
+                                        <option value="instagram">Instagram</option>
+                                        <option value="facebook">Facebook</option>
+                                        <option value="youtube">YouTube</option>
+                                        <option value="discord">Discord</option>
+                                        <option value="gmail">Gmail</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="dev">Dev.to</option>
+                                        <option value="stackoverflow">Stack Overflow</option>
+                                        <option value="behance">Behance</option>
+                                        <option value="dribbble">Dribbble</option>
+                                        <option value="portfolio">Portfolio Website</option>
+                                        <option value="other">Other</option>
+                                    </select>
+
+                                    {/* Icon Preview */}
+                                    <div className="mt-3 p-3 bg-[rgb(var(--bg-secondary))]/50 rounded-lg flex items-center gap-3 border border-[rgb(var(--border))]">
+                                        {(() => {
+                                            const PreviewIcon = getIcon(formData.platform);
+                                            return <PreviewIcon className="w-6 h-6 text-[rgb(var(--text-primary))]" />;
+                                        })()}
+                                        <span className="text-sm text-[rgb(var(--text-secondary))]">
+                                            Icon preview
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <Input
+                                    label="Profile URL"
+                                    name="url"
+                                    value={formData.url}
+                                    onChange={handleChange}
+                                    placeholder="https://github.com/username"
+                                    required
+                                />
+
+                                <Input
+                                    label="Username (Optional)"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    placeholder="@username"
+                                />
+
+                                <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleCloseForm}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="w-full sm:flex-1"
+                                        loading={submitting}
+                                    >
+                                        {editingSocial ? 'Save Changes' : 'Add Link'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </GlassCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Socials Grid */}
             {socials.length > 0 ? (
@@ -199,7 +320,7 @@ const ManageSocials = () => {
                                                     variant="secondary"
                                                     size="sm"
                                                     icon={Edit}
-                                                    onClick={() => handleOpenModal(social)}
+                                                    onClick={() => handleOpenForm(social)}
                                                     className="flex-1 justify-center"
                                                 />
                                                 <Button
@@ -222,90 +343,13 @@ const ManageSocials = () => {
                     <p className="text-[rgb(var(--text-secondary))] text-lg mb-4">
                         No social links yet. Add your first link!
                     </p>
-                    <Button icon={Plus} onClick={() => handleOpenModal()}>
+                    <Button icon={Plus} onClick={() => handleOpenForm()}>
                         Add Social Link
                     </Button>
                 </div>
             )}
 
-            {/* Add/Edit Modal */}
-            <Modal
-                isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
-                title={editingSocial ? 'Edit Link' : 'Add Link'}
-                size="md"
-            >
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
-                            Platform
-                        </label>
-                        <select
-                            name="platform"
-                            value={formData.platform}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2.5 glass rounded-lg text-[rgb(var(--text-primary))] outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]"
-                        >
-                            <option value="github">GitHub</option>
-                            <option value="linkedin">LinkedIn</option>
-                            <option value="twitter">X (Twitter)</option>
-                            <option value="instagram">Instagram</option>
-                            <option value="facebook">Facebook</option>
-                            <option value="youtube">YouTube</option>
-                            <option value="discord">Discord</option>
-                            <option value="gmail">Gmail</option>
-                            <option value="medium">Medium</option>
-                            <option value="dev">Dev.to</option>
-                            <option value="stackoverflow">Stack Overflow</option>
-                            <option value="behance">Behance</option>
-                            <option value="dribbble">Dribbble</option>
-                            <option value="portfolio">Portfolio Website</option>
-                            <option value="other">Other</option>
-                        </select>
 
-                        {/* Icon Preview */}
-                        <div className="mt-3 p-3 bg-[rgb(var(--bg-secondary))]/50 rounded-lg flex items-center gap-3 border border-[rgb(var(--border))]">
-                            {(() => {
-                                const PreviewIcon = getIcon(formData.platform);
-                                return <PreviewIcon className="w-6 h-6 text-[rgb(var(--text-primary))]" />;
-                            })()}
-                            <span className="text-sm text-[rgb(var(--text-secondary))]">
-                                Icon preview
-                            </span>
-                        </div>
-                    </div>
-
-                    <Input
-                        label="Profile URL"
-                        name="url"
-                        value={formData.url}
-                        onChange={handleChange}
-                        placeholder="https://github.com/username"
-                        required
-                    />
-
-                    <Input
-                        label="Username (Optional)"
-                        name="username"
-                        value={formData.username}
-                        onChange={handleChange}
-                        placeholder="@username"
-                    />
-
-                    <div className="flex gap-3 pt-4 border-t border-[rgb(var(--border))]">
-                        <Button type="submit" className="flex-1" loading={submitting}>
-                            {editingSocial ? 'Update' : 'Create'}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setModalOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };

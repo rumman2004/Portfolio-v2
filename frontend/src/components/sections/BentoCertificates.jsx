@@ -1,184 +1,26 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Award, ExternalLink, Calendar, CheckCircle, ChevronRight, ChevronLeft, Shield, Hash } from 'lucide-react';
+import { Award, ExternalLink, Calendar, ChevronRight, ChevronLeft, CheckCircle, Shield, Hash } from 'lucide-react';
 import { certificatesAPI } from '../../services/api';
 import { GlassCard } from '../ui';
 import { useTheme } from '../../context/ThemeContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const formatDate = (d) => {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-/* ─── Tilt card using GSAP quickTo ──────────────────────────────────────── */
-const TiltCard = ({ cert, isDark }) => {
-  const cardRef  = useRef(null);
-  const qRotateX = useRef(null);
-  const qRotateY = useRef(null);
-
-  useEffect(() => {
-    if (!cardRef.current) return;
-    qRotateX.current = gsap.quickTo(cardRef.current, 'rotateX', { duration: 0.45, ease: 'power2.out' });
-    qRotateY.current = gsap.quickTo(cardRef.current, 'rotateY', { duration: 0.45, ease: 'power2.out' });
-    gsap.set(cardRef.current, { transformStyle: 'preserve-3d', transformPerspective: 900 });
-  }, []);
-
-  const onMouseMove = (e) => {
-    const r  = e.currentTarget.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width  - 0.5;   // -0.5 → 0.5
-    const ny = (e.clientY - r.top)  / r.height - 0.5;
-    qRotateY.current?.(nx *  10);
-    qRotateX.current?.(ny * -10);
-  };
-  const onMouseLeave = () => {
-    qRotateX.current?.(0);
-    qRotateY.current?.(0);
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      className="w-full"
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      style={{ willChange: 'transform' }}
-    >
-      <GlassCard className={`w-full flex flex-col overflow-hidden border shadow-2xl rounded-2xl ${
-        isDark
-          ? 'bg-white/[0.07] border-white/15 backdrop-blur-2xl'
-          : 'bg-white border-slate-200/80 backdrop-blur-md shadow-slate-200/60'
-      }`}>
-
-        {/* ── Image ── */}
-        <div className={`relative h-52 sm:h-60 md:h-72 w-full overflow-hidden group ${
-          isDark ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-slate-100'
-        }`}>
-          {cert.image?.url ? (
-            <>
-              <img
-                src={cert.image.url}
-                alt={cert.title || cert.name}
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Award className={`w-20 h-20 sm:w-24 sm:h-24 opacity-15 ${isDark ? 'text-white' : 'text-slate-400'}`} />
-            </div>
-          )}
-
-          <div className={`absolute inset-x-0 bottom-0 h-16 pointer-events-none ${
-            isDark ? 'bg-gradient-to-t from-[rgb(var(--bg-card))] to-transparent' : 'bg-gradient-to-t from-white to-transparent'
-          }`} />
-
-          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center gap-1.5 shadow-xl">
-            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="cert-mono text-xs sm:text-sm">{formatDate(cert.issueDate || cert.date || cert.createdAt)}</span>
-          </div>
-
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 px-3 py-1.5 rounded-xl bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-400 flex items-center gap-1.5 shadow-xl">
-            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="cert-mono text-xs sm:text-sm font-semibold">Verified</span>
-          </div>
-        </div>
-
-        {/* ── Content ── */}
-        <div className={`flex-1 p-5 sm:p-6 lg:p-8 flex flex-col gap-4 ${isDark ? '' : 'bg-white'}`}>
-          <div className="flex items-start justify-between gap-3">
-            <h3 className={`cert-heading text-lg sm:text-xl md:text-2xl leading-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
-              {cert.title || cert.name}
-            </h3>
-            {cert.credentialUrl && (
-              <a
-                href={cert.credentialUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0 p-2 sm:p-2.5 rounded-xl bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))] hover:bg-[rgb(var(--accent))] hover:text-white border border-[rgb(var(--accent))]/20 transition-all duration-200 hover:scale-110"
-                title="View Certificate"
-              >
-                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
-              </a>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 sm:p-2 rounded-lg bg-[rgb(var(--accent))]/10 flex-shrink-0">
-              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-[rgb(var(--accent))]" />
-            </div>
-            <div className="min-w-0">
-              <p className="cert-mono text-[10px] sm:text-xs text-[rgb(var(--text-secondary))] uppercase tracking-wide">Issued by</p>
-              <p className="cert-heading text-sm sm:text-base text-[rgb(var(--accent))] truncate font-bold">{cert.issuer || 'Verified Organization'}</p>
-            </div>
-          </div>
-
-          {cert.description && (
-            <p className={`cert-mono text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3 pt-3 border-t text-[rgb(var(--text-secondary))] ${
-              isDark ? 'border-white/10' : 'border-slate-100'
-            }`}>
-              {cert.description}
-            </p>
-          )}
-
-          <div className={`grid grid-cols-2 gap-2 sm:gap-3 pt-3 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-            <MetaBox icon={<Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))]" />} label="Issued"   value={formatDate(cert.issueDate || cert.date || cert.createdAt)} isDark={isDark} />
-            {cert.expiryDate
-              ? <MetaBox icon={<Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />}               label="Expires"  value={formatDate(cert.expiryDate)} isDark={isDark} />
-              : <MetaBox icon={<CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />}             label="Valid"    value="Lifetime" isDark={isDark} />
-            }
-            {cert.credentialId && (
-              <MetaBox icon={<Hash className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))]" />} label="Credential ID" value={cert.credentialId} mono full isDark={isDark} />
-            )}
-          </div>
-
-          <div className={`mt-auto pt-3 sm:pt-4 flex items-center justify-between border-t-2 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-              <span className="cert-mono text-xs sm:text-sm font-bold text-green-500">Verified</span>
-            </div>
-            {cert.credentialUrl && (
-              <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer"
-                className="cert-mono text-xs text-[rgb(var(--accent))] hover:underline flex items-center gap-1">
-                <span className="hidden sm:inline">View Online</span>
-                <span className="sm:hidden">View</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-        </div>
-      </GlassCard>
-    </div>
-  );
-};
-
-const MetaBox = ({ icon, label, value, mono, full, isDark }) => (
-  <div className={`p-2.5 sm:p-3 rounded-xl border ${full ? 'col-span-2' : ''} ${
-    isDark ? 'bg-white/[0.05] border-white/10' : 'bg-slate-50 border-slate-200/80'
-  }`}>
-    <div className="flex items-center gap-1.5 mb-1">{icon}
-      <span className="cert-mono text-[10px] sm:text-xs text-[rgb(var(--text-secondary))] uppercase tracking-wide">{label}</span>
-    </div>
-    <p className={`cert-mono text-xs sm:text-sm font-bold ${mono ? 'break-all' : 'truncate'} ${isDark ? 'text-white' : 'text-slate-800'}`}>
-      {value}
-    </p>
-  </div>
-);
-
-/* ─── Carousel shell ─────────────────────────────────────────────────────── */
 export default function BentoCertificates() {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [activeIndex, setActiveIndex]   = useState(0);
-  const [direction, setDirection]       = useState(0);
-  const timerRef                        = useRef(null);
+  const [certIndex, setCertIndex]       = useState(0);
+  const [isHovered, setIsHovered]       = useState(false);
+  const [touchStart, setTouchStart]     = useState(null);
+  const [touchEnd, setTouchEnd]         = useState(null);
+  
   const sectionRef                      = useRef(null);
   const headerRef                       = useRef(null);
   const tagRef                          = useRef(null);
-  const stageRef                        = useRef(null);
+  const certAreaRef                     = useRef(null);
+  
   const { theme }                       = useTheme();
   const isDark                          = theme === 'dark';
 
@@ -188,6 +30,13 @@ export default function BentoCertificates() {
       .catch(e  => console.error('Failed to fetch certificates', e))
       .finally(() => setLoading(false));
   }, []);
+
+  /* ── Cert auto-advance ── */
+  useEffect(() => {
+      if (!certificates.length || isHovered) return;
+      const t = setInterval(() => setCertIndex(p => (p + 1) % certificates.length), 5000);
+      return () => clearInterval(t);
+  }, [certIndex, certificates.length, isHovered]);
 
   /* ── GSAP entrance ── */
   useEffect(() => {
@@ -206,73 +55,48 @@ export default function BentoCertificates() {
           scrollTrigger: { trigger: headerRef.current, start: 'top 86%', toggleActions: 'play none none reverse' } }
       );
 
-      gsap.fromTo(stageRef.current,
+      gsap.fromTo(certAreaRef.current,
         { y: 40, opacity: 0 },
         { y: 0, opacity: 1, duration: 1, ease: 'expo.out', delay: 0.2,
-          scrollTrigger: { trigger: stageRef.current, start: 'top 84%', toggleActions: 'play none none reverse' } }
+          scrollTrigger: { trigger: certAreaRef.current, start: 'top 84%', toggleActions: 'play none none reverse' } }
       );
 
     }, sectionRef.current);
     return () => ctx.revert();
   }, [loading, certificates]);
 
-  /* ── Card slide animation via GSAP ── */
-  const slideCard = useCallback((incoming, outgoing, dir) => {
-    if (!incoming || !outgoing) return;
-    const xIn  = dir > 0 ?  '100%' : '-100%';
-    const xOut = dir > 0 ? '-100%' :  '100%';
+  /* ── Certificate helpers ── */
+  const handleNextCert = useCallback(() => setCertIndex(p => (p + 1) % certificates.length), [certificates.length]);
+  const handlePrevCert = useCallback(() => setCertIndex(p => (p - 1 + certificates.length) % certificates.length), [certificates.length]);
 
-    gsap.set(incoming, { x: xIn, rotateY: dir > 0 ? 52 : -52, scale: 0.78, opacity: 0, zIndex: 2 });
-    gsap.set(outgoing, { zIndex: 1 });
+  const onTouchStart = (e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); };
+  const onTouchMove  = (e) => { setTouchEnd(e.targetTouches[0].clientX); };
+  const onTouchEnd   = () => {
+      if (!touchStart || !touchEnd) return;
+      const d = touchStart - touchEnd;
+      if (d > 50) handleNextCert(); else if (d < -50) handlePrevCert();
+  };
 
-    gsap.to(outgoing, {
-      x: xOut, rotateY: dir > 0 ? -52 : 52, scale: 0.78, opacity: 0,
-      duration: 0.55, ease: 'power2.in',
-    });
-    gsap.to(incoming, {
-      x: 0, rotateY: 0, scale: 1, opacity: 1,
-      duration: 0.72, ease: 'expo.out', delay: 0.05,
-    });
-  }, []);
+  const getCardStyle = (index) => {
+      const len = certificates.length;
+      if (!len) return 'hidden';
+      let offset = (index - certIndex + len) % len;
+      if (offset > len / 2) offset -= len;
+      if (offset === 0) return 'center';
+      if (offset === -1 || (len === 2 && offset === 1)) return 'left';
+      if (offset === 1) return 'right';
+      return offset < 0 ? 'hiddenLeft' : 'hiddenRight';
+  };
 
-  const cardEls  = useRef({});
-  const prevIdx  = useRef(activeIndex);
-
-  useEffect(() => {
-    const incoming = cardEls.current[activeIndex];
-    const outgoing = cardEls.current[prevIdx.current];
-    if (prevIdx.current !== activeIndex) {
-      slideCard(incoming, outgoing, direction);
-    }
-    prevIdx.current = activeIndex;
-  }, [activeIndex, direction, slideCard]);
-
-  const goNext = useCallback(() => {
-    setDirection(1);
-    setActiveIndex(p => (p + 1) % certificates.length);
-  }, [certificates.length]);
-
-  const goPrev = useCallback(() => {
-    setDirection(-1);
-    setActiveIndex(p => (p - 1 + certificates.length) % certificates.length);
-  }, [certificates.length]);
-
-  const resetTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    if (certificates.length > 1) timerRef.current = setInterval(goNext, 6500);
-  }, [goNext, certificates.length]);
-
-  useEffect(() => { resetTimer(); return () => clearInterval(timerRef.current); }, [resetTimer]);
-
-  const handlePrev = () => { goPrev(); resetTimer(); };
-  const handleNext = () => { goNext(); resetTimer(); };
-  const handleDot  = (i) => { setDirection(i > activeIndex ? 1 : -1); setActiveIndex(i); resetTimer(); };
+  const certPositions = {
+      center:      { x: '0%',    scale: 1,    opacity: 1,   zIndex: 30, rotateY: 0,   filter: 'blur(0px)' },
+      left:        { x: '-85%',  scale: 0.75, opacity: 0.6, zIndex: 20, rotateY: 25,  filter: 'blur(1px)' },
+      right:       { x: '85%',   scale: 0.75, opacity: 0.6, zIndex: 20, rotateY: -25, filter: 'blur(1px)' },
+      hiddenLeft:  { x: '-120%', scale: 0.4,  opacity: 0,   zIndex: 10, rotateY: 35,  filter: 'blur(4px)' },
+      hiddenRight: { x: '120%',  scale: 0.4,  opacity: 0,   zIndex: 10, rotateY: -35, filter: 'blur(4px)' },
+  };
 
   if (loading || certificates.length === 0) return null;
-
-  const navBtnClass = isDark
-    ? 'bg-white/10 hover:bg-white/25 border-white/20 text-white'
-    : 'bg-white/90 hover:bg-white border-slate-200 text-slate-800';
 
   return (
     <>
@@ -289,7 +113,7 @@ export default function BentoCertificates() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-14 relative z-10">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
 
-            <div ref={tagRef} style={{ marginBottom: '1.5rem' }}>
+            <div ref={tagRef} style={{ marginBottom: '1.5rem', opacity: 0 }}>
               <span className="cert-tag" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
                 padding: '0.5rem 1.2rem', borderRadius: '9999px',
@@ -307,6 +131,7 @@ export default function BentoCertificates() {
               lineHeight: 0.92, letterSpacing: '-0.035em',
               color: `rgb(var(--text-primary))`,
               marginBottom: '1.25rem',
+              opacity: 0,
             }}>
               Certified{' '}
               <em style={{ color: `rgb(var(--accent))`, fontStyle: 'italic' }}>Expertise</em>
@@ -322,60 +147,134 @@ export default function BentoCertificates() {
         </div>
 
         {/* ── Carousel ── */}
-        <div ref={stageRef} className="relative w-full px-4 sm:px-6">
-          <div style={{ perspective: '1300px', perspectiveOrigin: '50% 50%', position: 'relative', width: '100%' }}>
-            <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', minHeight: '20px', transformStyle: 'preserve-3d' }}>
-
-              {/* Render all cards; show/hide via GSAP */}
-              {certificates.map((cert, i) => (
-                <div
-                  key={cert._id || i}
-                  ref={el => cardEls.current[i] = el}
-                  style={{
-                    position: i === 0 ? 'relative' : 'absolute',
-                    width: '100%', maxWidth: '42rem',
-                    opacity: i === activeIndex ? 1 : 0,
-                    pointerEvents: i === activeIndex ? 'auto' : 'none',
-                    transformStyle: 'preserve-3d',
-                    willChange: 'transform, opacity',
-                  }}
+        <div
+            ref={certAreaRef}
+            style={{ opacity: 0 }}
+            className="relative w-full max-w-[1200px] mx-auto h-[400px] sm:h-[500px] lg:h-[550px] flex items-center justify-center"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* Nav buttons */}
+            {[
+                { dir: 'prev', Icon: ChevronLeft, handler: handlePrevCert, pos: 'left-2 sm:left-6 lg:left-10' },
+                { dir: 'next', Icon: ChevronRight, handler: handleNextCert, pos: 'right-2 sm:right-6 lg:right-10' },
+            ].map(({ dir, Icon, handler, pos }) => (
+                <button
+                    key={dir}
+                    onClick={handler}
+                    aria-label={`${dir === 'prev' ? 'Previous' : 'Next'} certificate`}
+                    className={`absolute ${pos} z-30 p-2 sm:p-3 rounded-full bg-[rgb(var(--bg-card))]/90 backdrop-blur-md border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-lg flex items-center justify-center group`}
                 >
-                  <TiltCard cert={cert} isDark={isDark} />
-                </div>
-              ))}
-            </div>
-          </div>
+                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform ${dir === 'prev' ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
+                </button>
+            ))}
 
-          {/* Nav buttons */}
-          <button onClick={handlePrev} aria-label="Previous certificate"
-            className={`absolute left-0 sm:left-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${navBtnClass}`}>
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          <button onClick={handleNext} aria-label="Next certificate"
-            className={`absolute right-0 sm:right-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${navBtnClass}`}>
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
+            <div
+                className="relative w-full h-full flex items-center justify-center"
+                style={{ perspective: '2000px', perspectiveOrigin: 'center' }}
+            >
+                {certificates.map((cert, index) => {
+                    const position = getCardStyle(index);
+                    const v = certPositions[position] || certPositions.hiddenRight;
+                    return (
+                        <div
+                            key={cert._id}
+                            className="absolute w-[80vw] max-w-[260px] sm:w-[70vw] sm:max-w-[400px] lg:max-w-[500px]"
+                            style={{
+                                transform: `translateX(${v.x}) scale(${v.scale}) rotateY(${v.rotateY}deg)`,
+                                opacity: v.opacity,
+                                zIndex: v.zIndex,
+                                filter: v.filter,
+                                transition: 'transform 0.7s cubic-bezier(0.645,0.045,0.355,1), opacity 0.7s ease, filter 0.7s ease',
+                                transformStyle: 'preserve-3d',
+                            }}
+                        >
+                            <GlassCard className="h-[350px] sm:h-[400px] lg:h-[450px] flex flex-col p-0 overflow-hidden shadow-2xl border border-[rgb(var(--border))] hover:border-[rgb(var(--accent))]/50 transition-all duration-300 transform-gpu">
+                                <div className="relative h-40 sm:h-48 lg:h-60 bg-[rgb(var(--bg-secondary))]/30 p-4 sm:p-6 flex items-center justify-center overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-[rgb(var(--accent))]/5 to-transparent" />
+                                    {cert.image?.url ? (
+                                        <img src={cert.image.url} alt={cert.title || cert.name} className="w-full h-full object-contain drop-shadow-lg" loading="lazy" />
+                                    ) : (
+                                        <Award className={`w-20 h-20 sm:w-24 sm:h-24 opacity-15 ${isDark ? 'text-white' : 'text-slate-400'}`} />
+                                    )}
 
-          {/* Dots */}
-          {certificates.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem' }}>
-              {certificates.map((_, i) => (
-                <button key={i} onClick={() => handleDot(i)} aria-label={`Go to certificate ${i + 1}`}
-                  style={{
-                    height: '6px', borderRadius: '9999px',
-                    width: i === activeIndex ? '2rem' : '0.5rem',
-                    background: i === activeIndex
-                      ? `rgb(var(--accent))`
-                      : isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
-                    border: 'none', cursor: 'pointer',
-                    transition: 'all 0.4s cubic-bezier(0.22,1,0.36,1)',
-                  }}
-                />
-              ))}
+                                    {/* Floating Badges */}
+                                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center gap-1.5 shadow-xl">
+                                        <Calendar className="w-3 h-3" />
+                                        <span className="cert-mono text-[10px] sm:text-xs">{formatDate(cert.issueDate || cert.date || cert.createdAt)}</span>
+                                    </div>
+                                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-green-500/20 backdrop-blur-md border border-green-400/30 text-green-400 flex items-center gap-1.5 shadow-xl">
+                                        <CheckCircle className="w-3 h-3" />
+                                        <span className="cert-mono text-[10px] sm:text-xs font-semibold">Verified</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="p-4 sm:p-5 lg:p-6 flex-1 flex flex-col justify-between bg-[rgb(var(--bg-card))]/80 backdrop-blur-md">
+                                    <div>
+                                        <h3 className="cert-heading text-base sm:text-lg lg:text-xl leading-tight line-clamp-1 mb-2 text-[rgb(var(--text-primary))]" style={{ letterSpacing: '-0.02em' }}>
+                                            {cert.title || cert.name}
+                                        </h3>
+                                        
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="p-1.5 rounded-lg bg-[rgb(var(--accent))]/10 flex-shrink-0">
+                                                <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-[rgb(var(--accent))]" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="cert-mono text-[9px] sm:text-[10px] text-[rgb(var(--text-secondary))] uppercase tracking-wide leading-none mb-0.5">Issued by</p>
+                                                <p className="cert-heading text-xs sm:text-sm text-[rgb(var(--accent))] truncate font-bold leading-none">{cert.issuer || 'Verified Organization'}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {cert.description && (
+                                            <p className="cert-mono line-clamp-2" style={{ fontWeight: 300, fontSize: '0.65rem', sm: '0.72rem', lineHeight: 1.6, color: 'rgb(var(--text-secondary))' }}>{cert.description}</p>
+                                        )}
+                                    </div>
+                                    <div className="pt-3 mt-2 flex items-center justify-between border-t border-[rgb(var(--border))]">
+                                        <div className="flex items-center gap-1.5">
+                                            <CheckCircle className="w-3 h-3 text-green-500" />
+                                            <span className="cert-mono font-bold text-green-500" style={{ fontSize: '0.62rem', letterSpacing: '0.05em' }}>
+                                                Verified
+                                            </span>
+                                        </div>
+                                        {cert.credentialUrl && (
+                                            <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer"
+                                                className="cert-mono flex items-center gap-1 hover:text-[rgb(var(--accent))] transition-colors"
+                                                style={{ fontWeight: 400, fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgb(var(--text-primary))' }}
+                                            >
+                                                View <ExternalLink className="w-2.5 h-2.5" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </GlassCard>
+                        </div>
+                    );
+                })}
             </div>
-          )}
+
+            {/* Dots */}
+            {certificates.length > 1 && (
+              <div className="absolute -bottom-8 sm:-bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
+                  {certificates.map((_, idx) => (
+                      <button
+                          key={idx}
+                          onClick={() => setCertIndex(idx)}
+                          aria-label={`Go to certificate ${idx + 1}`}
+                          className={`h-2 rounded-full transition-all duration-300 ${idx === certIndex ? 'w-8 bg-[rgb(var(--accent))]' : 'w-2 bg-[rgb(var(--border))] hover:bg-[rgb(var(--text-secondary))]/50'}`}
+                      />
+                  ))}
+              </div>
+            )}
         </div>
       </section>
     </>
   );
 }
+
+const formatDate = (d) => {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+};

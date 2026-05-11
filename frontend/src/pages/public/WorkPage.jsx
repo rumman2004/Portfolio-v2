@@ -107,18 +107,23 @@ const WorkPage = () => {
         return () => ctx.revert();
     }, [loading]);
 
+    const categories = ['all', 'web', 'mobile', 'fullstack', 'design', 'other'];
+    const filteredProjects = filter === 'all' ? projects : projects.filter(p => p.category?.toLowerCase() === filter.toLowerCase());
+
     /* Re-animate cards when filter changes */
     useEffect(() => {
         if (!gridRef.current) return;
         const cards = gridRef.current.querySelectorAll('.project-card');
+        if (cards.length === 0) return;
+
+        // Kill any existing tweens on these elements to prevent conflicts
+        gsap.killTweensOf(cards);
+
         gsap.fromTo(cards,
             { y: 30, opacity: 0, scale: 0.95 },
             { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out', stagger: 0.07 }
         );
-    }, [filter]);
-
-    const categories = ['all', 'web', 'mobile', 'fullstack', 'design', 'other'];
-    const filteredProjects = filter === 'all' ? projects : projects.filter(p => p.category === filter);
+    }, [filter, filteredProjects.length]);
 
     if (loading) return <Loader fullScreen size="lg" />;
 

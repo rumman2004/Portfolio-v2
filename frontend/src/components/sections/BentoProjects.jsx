@@ -8,143 +8,19 @@ import { useTheme } from '../../context/ThemeContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Tilt card via GSAP quickTo ────────────────────────────────────────── */
-const ProjectCard = ({ project, isDark }) => {
-  const cardRef  = useRef(null);
-  const qRotateX = useRef(null);
-  const qRotateY = useRef(null);
-
-  useEffect(() => {
-    if (!cardRef.current) return;
-    qRotateX.current = gsap.quickTo(cardRef.current, 'rotateX', { duration: 0.45, ease: 'power2.out' });
-    qRotateY.current = gsap.quickTo(cardRef.current, 'rotateY', { duration: 0.45, ease: 'power2.out' });
-    gsap.set(cardRef.current, { transformStyle: 'preserve-3d', transformPerspective: 900 });
-  }, []);
-
-  const onMouseMove = (e) => {
-    const r  = e.currentTarget.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width  - 0.5;
-    const ny = (e.clientY - r.top)  / r.height - 0.5;
-    qRotateY.current?.(nx *  10);
-    qRotateX.current?.(ny * -10);
-  };
-  const onMouseLeave = () => {
-    qRotateX.current?.(0);
-    qRotateY.current?.(0);
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      className="w-full"
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      style={{ willChange: 'transform' }}
-    >
-      <GlassCard className={`w-full flex flex-col overflow-hidden border shadow-2xl rounded-2xl ${
-        isDark
-          ? 'bg-white/[0.07] border-white/15 backdrop-blur-2xl'
-          : 'bg-white border-slate-200/80 backdrop-blur-md shadow-slate-200/60'
-      }`}>
-
-        {/* ── Image ── */}
-        <div className={`relative h-52 sm:h-60 md:h-72 w-full overflow-hidden group ${
-          isDark ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-slate-100'
-        }`}>
-          {project.image?.url ? (
-            <>
-              <img
-                src={project.image.url}
-                alt={project.title}
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Briefcase className="w-16 h-16 opacity-10" />
-            </div>
-          )}
-
-          <div className={`absolute inset-x-0 bottom-0 h-16 pointer-events-none ${
-            isDark ? 'bg-gradient-to-t from-[rgb(var(--bg-card))] to-transparent' : 'bg-gradient-to-t from-white to-transparent'
-          }`} />
-
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-[10px] sm:text-xs font-semibold text-white flex items-center gap-1.5 shadow-xl proj-mono">
-            <Layers className="w-3 h-3" />
-            {project.category}
-          </div>
-        </div>
-
-        {/* ── Content ── */}
-        <div className={`flex-1 p-5 sm:p-6 lg:p-8 flex flex-col gap-4 ${isDark ? '' : 'bg-white'}`}>
-          <h3 className={`proj-heading text-lg sm:text-xl md:text-2xl leading-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            {project.title}
-          </h3>
-
-          <p className="proj-mono text-xs sm:text-sm text-[rgb(var(--text-secondary))] leading-relaxed line-clamp-3">
-            {project.shortDescription}
-          </p>
-
-          <div className="mt-auto space-y-4">
-            {/* Tech chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {project.technologies?.slice(0, 5).map((tech, i) => (
-                <span
-                  key={i}
-                  className={`proj-mono px-2.5 py-1 rounded-md text-[10px] sm:text-xs border ${
-                    isDark
-                      ? 'bg-white/[0.06] border-white/10 text-white/75'
-                      : 'bg-slate-100 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-
-            {/* Links */}
-            <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
-              {project.githubLink && (
-                <a href={project.githubLink} target="_blank" rel="noopener noreferrer"
-                  className={`proj-mono flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
-                    isDark
-                      ? 'bg-white/5 hover:bg-white/12 border-white/10 text-white/80'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                  }`}>
-                  <Github className="w-4 h-4" />
-                  Source
-                </a>
-              )}
-              {project.liveLink && (
-                <a href={project.liveLink} target="_blank" rel="noopener noreferrer"
-                  className="proj-mono flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[rgb(var(--accent))]/20 hover:bg-[rgb(var(--accent))]/35 text-[rgb(var(--accent))] border border-[rgb(var(--accent))]/30 text-xs sm:text-sm font-semibold transition-all duration-200 hover:scale-[1.03] active:scale-95">
-                  <ExternalLink className="w-4 h-4" />
-                  Live Demo
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-    </div>
-  );
-};
-
-/* ─── Main component ─────────────────────────────────────────────────────── */
 export default function BentoProjects() {
   const [projects, setProjects]       = useState([]);
   const [loading, setLoading]         = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [direction, setDirection]     = useState(0);
-  const timerRef                      = useRef(null);
+  const [projectIndex, setProjectIndex] = useState(0);
+  const [isHovered, setIsHovered]       = useState(false);
+  const [touchStart, setTouchStart]     = useState(null);
+  const [touchEnd, setTouchEnd]         = useState(null);
+
   const sectionRef                    = useRef(null);
   const tagRef                        = useRef(null);
   const headingRef                    = useRef(null);
   const stageRef                      = useRef(null);
-  const cardEls                       = useRef({});
-  const prevIdx                       = useRef(0);
+
   const { theme }                     = useTheme();
   const isDark                        = theme === 'dark';
 
@@ -186,41 +62,45 @@ export default function BentoProjects() {
     return () => ctx.revert();
   }, [loading, projects]);
 
-  /* ── Card slide ── */
-  const slideCard = useCallback((incoming, outgoing, dir) => {
-    if (!incoming || !outgoing) return;
-    gsap.set(incoming, { x: dir > 0 ? '100%' : '-100%', rotateY: dir > 0 ? 52 : -52, scale: 0.78, opacity: 0, zIndex: 2 });
-    gsap.set(outgoing, { zIndex: 1 });
-    gsap.to(outgoing,  { x: dir > 0 ? '-100%' : '100%', rotateY: dir > 0 ? -52 : 52, scale: 0.78, opacity: 0, duration: 0.55, ease: 'power2.in' });
-    gsap.to(incoming,  { x: 0, rotateY: 0, scale: 1, opacity: 1, duration: 0.72, ease: 'expo.out', delay: 0.05 });
-  }, []);
-
+  /* ── Auto-advance ── */
   useEffect(() => {
-    const incoming = cardEls.current[activeIndex];
-    const outgoing = cardEls.current[prevIdx.current];
-    if (prevIdx.current !== activeIndex) slideCard(incoming, outgoing, direction);
-    prevIdx.current = activeIndex;
-  }, [activeIndex, direction, slideCard]);
+      if (!projects.length || isHovered) return;
+      const t = setInterval(() => setProjectIndex(p => (p + 1) % projects.length), 6500);
+      return () => clearInterval(t);
+  }, [projectIndex, projects.length, isHovered]);
 
-  const goNext = useCallback(() => { setDirection(1);  setActiveIndex(p => (p + 1) % projects.length); }, [projects.length]);
-  const goPrev = useCallback(() => { setDirection(-1); setActiveIndex(p => (p - 1 + projects.length) % projects.length); }, [projects.length]);
+  /* ── Helpers ── */
+  const handleNext = useCallback(() => setProjectIndex(p => (p + 1) % projects.length), [projects.length]);
+  const handlePrev = useCallback(() => setProjectIndex(p => (p - 1 + projects.length) % projects.length), [projects.length]);
 
-  const resetTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    if (projects.length > 1) timerRef.current = setInterval(goNext, 6500);
-  }, [goNext, projects.length]);
+  const onTouchStart = (e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); };
+  const onTouchMove  = (e) => { setTouchEnd(e.targetTouches[0].clientX); };
+  const onTouchEnd   = () => {
+      if (!touchStart || !touchEnd) return;
+      const d = touchStart - touchEnd;
+      if (d > 50) handleNext(); else if (d < -50) handlePrev();
+  };
 
-  useEffect(() => { resetTimer(); return () => clearInterval(timerRef.current); }, [resetTimer]);
+  const getCardStyle = (index) => {
+      const len = projects.length;
+      if (!len) return 'hidden';
+      let offset = (index - projectIndex + len) % len;
+      if (offset > len / 2) offset -= len;
+      if (offset === 0) return 'center';
+      if (offset === -1 || (len === 2 && offset === 1)) return 'left';
+      if (offset === 1) return 'right';
+      return offset < 0 ? 'hiddenLeft' : 'hiddenRight';
+  };
 
-  const handlePrev = () => { goPrev(); resetTimer(); };
-  const handleNext = () => { goNext(); resetTimer(); };
-  const handleDot  = (i) => { setDirection(i > activeIndex ? 1 : -1); setActiveIndex(i); resetTimer(); };
+  const projectPositions = {
+      center:      { x: '0%',    scale: 1,    opacity: 1,   zIndex: 30, rotateY: 0,   filter: 'blur(0px)' },
+      left:        { x: '-85%',  scale: 0.75, opacity: 0.6, zIndex: 20, rotateY: 25,  filter: 'blur(1px)' },
+      right:       { x: '85%',   scale: 0.75, opacity: 0.6, zIndex: 20, rotateY: -25, filter: 'blur(1px)' },
+      hiddenLeft:  { x: '-120%', scale: 0.4,  opacity: 0,   zIndex: 10, rotateY: 35,  filter: 'blur(4px)' },
+      hiddenRight: { x: '120%',  scale: 0.4,  opacity: 0,   zIndex: 10, rotateY: -35, filter: 'blur(4px)' },
+  };
 
   if (loading || projects.length === 0) return null;
-
-  const navBtnClass = isDark
-    ? 'bg-white/10 hover:bg-white/25 border-white/20 text-white'
-    : 'bg-white/90 hover:bg-white border-slate-200 text-slate-800';
 
   return (
     <>
@@ -237,7 +117,7 @@ export default function BentoProjects() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 mb-8 md:mb-14 relative z-10">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
 
-            <div ref={tagRef} style={{ marginBottom: '1.5rem' }}>
+            <div ref={tagRef} style={{ marginBottom: '1.5rem', opacity: 0 }}>
               <span className="proj-tag" style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
                 padding: '0.5rem 1.2rem', borderRadius: '9999px',
@@ -254,6 +134,7 @@ export default function BentoProjects() {
               fontSize: 'clamp(2.8rem, 7vw, 6rem)',
               lineHeight: 0.92, letterSpacing: '-0.035em',
               color: `rgb(var(--text-primary))`,
+              opacity: 0,
             }}>
               Completed{' '}
               <em style={{ color: `rgb(var(--accent))`, fontStyle: 'italic' }}>Projects</em>
@@ -262,54 +143,156 @@ export default function BentoProjects() {
         </div>
 
         {/* ── Carousel ── */}
-        <div ref={stageRef} className="relative w-full px-4 sm:px-6">
-          <div style={{ perspective: '1300px', perspectiveOrigin: '50% 50%', position: 'relative', width: '100%' }}>
-            <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', minHeight: '20px', transformStyle: 'preserve-3d' }}>
-              {projects.map((project, i) => (
-                <div
-                  key={project._id || i}
-                  ref={el => cardEls.current[i] = el}
-                  style={{
-                    position: i === 0 ? 'relative' : 'absolute',
-                    width: '100%', maxWidth: '42rem',
-                    opacity: i === activeIndex ? 1 : 0,
-                    pointerEvents: i === activeIndex ? 'auto' : 'none',
-                    transformStyle: 'preserve-3d',
-                    willChange: 'transform, opacity',
-                  }}
+        <div
+            ref={stageRef}
+            style={{ opacity: 0 }}
+            className="relative w-full max-w-[1200px] mx-auto h-[500px] sm:h-[580px] lg:h-[650px] flex items-center justify-center"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* Nav buttons */}
+            {[
+                { dir: 'prev', Icon: ChevronLeft, handler: handlePrev, pos: 'left-2 sm:left-6 lg:left-10' },
+                { dir: 'next', Icon: ChevronRight, handler: handleNext, pos: 'right-2 sm:right-6 lg:right-10' },
+            ].map(({ dir, Icon, handler, pos }) => (
+                <button
+                    key={dir}
+                    onClick={handler}
+                    aria-label={`${dir === 'prev' ? 'Previous' : 'Next'} project`}
+                    className={`absolute ${pos} z-30 p-2 sm:p-3 rounded-full bg-[rgb(var(--bg-card))]/90 backdrop-blur-md border border-[rgb(var(--border))] hover:bg-[rgb(var(--accent))] hover:text-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-lg flex items-center justify-center group`}
                 >
-                  <ProjectCard project={project} isDark={isDark} />
+                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform ${dir === 'prev' ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
+                </button>
+            ))}
+
+            <div
+                className="relative w-full h-full flex items-center justify-center"
+                style={{ perspective: '2000px', perspectiveOrigin: 'center' }}
+            >
+                {projects.map((project, index) => {
+                    const position = getCardStyle(index);
+                    const v = projectPositions[position] || projectPositions.hiddenRight;
+                    return (
+                        <div
+                            key={project._id || index}
+                            className="absolute w-[85vw] max-w-[320px] sm:w-[75vw] sm:max-w-[450px] lg:max-w-[550px]"
+                            style={{
+                                transform: `translateX(${v.x}) scale(${v.scale}) rotateY(${v.rotateY}deg)`,
+                                opacity: v.opacity,
+                                zIndex: v.zIndex,
+                                filter: v.filter,
+                                transition: 'transform 0.7s cubic-bezier(0.645,0.045,0.355,1), opacity 0.7s ease, filter 0.7s ease',
+                                transformStyle: 'preserve-3d',
+                            }}
+                        >
+                            <GlassCard className={`h-[450px] sm:h-[520px] lg:h-[580px] w-full flex flex-col overflow-hidden shadow-2xl border transition-all duration-300 transform-gpu p-0 ${
+                                isDark
+                                  ? 'bg-white/[0.07] border-white/15 hover:border-[rgb(var(--accent))]/50'
+                                  : 'bg-white border-slate-200/80 hover:border-[rgb(var(--accent))]/50 shadow-slate-200/60'
+                              }`}>
+                                
+                                {/* ── Image ── */}
+                                <div className={`relative w-full aspect-video overflow-hidden group flex-shrink-0 ${
+                                    isDark ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-slate-100'
+                                }`}>
+                                    {project.image?.url ? (
+                                        <>
+                                            <img
+                                                src={project.image.url}
+                                                alt={project.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                                                loading="lazy"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                        </>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Briefcase className="w-16 h-16 opacity-10" />
+                                        </div>
+                                    )}
+
+                                    <div className={`absolute inset-x-0 bottom-0 h-16 pointer-events-none opacity-50 ${
+                                        isDark ? 'bg-gradient-to-t from-[rgb(var(--bg-card))] to-transparent' : 'bg-gradient-to-t from-white to-transparent'
+                                    }`} />
+
+                                    <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-black/55 backdrop-blur-md border border-white/10 text-[10px] sm:text-xs font-semibold text-white flex items-center gap-1.5 shadow-xl proj-mono">
+                                        <Layers className="w-3 h-3" />
+                                        {project.category}
+                                    </div>
+                                </div>
+
+                                {/* ── Content ── */}
+                                <div className={`flex-1 p-4 sm:p-5 flex flex-col gap-2.5 sm:gap-3 ${isDark ? 'bg-[rgb(var(--bg-card))]/80 backdrop-blur-md' : 'bg-white/90 backdrop-blur-md'}`}>
+                                    <h3 className={`proj-heading text-lg sm:text-xl lg:text-2xl leading-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                        {project.title}
+                                    </h3>
+
+                                    <p className="proj-mono text-xs sm:text-sm text-[rgb(var(--text-secondary))] leading-relaxed line-clamp-2 sm:line-clamp-3">
+                                        {project.shortDescription}
+                                    </p>
+
+                                    <div className="mt-auto space-y-2.5 sm:space-y-3">
+                                        {/* Tech chips */}
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {project.technologies?.slice(0, 5).map((tech, i) => (
+                                                <span
+                                                    key={i}
+                                                    className={`proj-mono px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[9px] sm:text-[10px] lg:text-xs border ${
+                                                        isDark
+                                                            ? 'bg-white/[0.06] border-white/10 text-white/75'
+                                                            : 'bg-slate-100 border-slate-200 text-slate-600'
+                                                    }`}
+                                                >
+                                                    {tech}
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* Links */}
+                                        <div className={`flex gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+                                            {project.githubLink && (
+                                                <a href={project.githubLink} target="_blank" rel="noopener noreferrer"
+                                                    className={`proj-mono flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl border text-[10px] sm:text-xs lg:text-sm font-semibold transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
+                                                        isDark
+                                                            ? 'bg-white/5 hover:bg-white/12 border-white/10 text-white/80'
+                                                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                                                    }`}>
+                                                    <Github className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    Source
+                                                </a>
+                                            )}
+                                            {project.liveLink && (
+                                                <a href={project.liveLink} target="_blank" rel="noopener noreferrer"
+                                                    className="proj-mono flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl bg-[rgb(var(--accent))]/20 hover:bg-[rgb(var(--accent))]/35 text-[rgb(var(--accent))] border border-[rgb(var(--accent))]/30 text-[10px] sm:text-xs lg:text-sm font-semibold transition-all duration-200 hover:scale-[1.03] active:scale-95">
+                                                    <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                    Live Demo
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </GlassCard>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Dots */}
+            {projects.length > 1 && (
+                <div className="absolute -bottom-8 sm:-bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
+                    {projects.map((_, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setProjectIndex(idx)}
+                            aria-label={`Go to project ${idx + 1}`}
+                            className={`h-2 rounded-full transition-all duration-300 ${idx === projectIndex ? 'w-8 bg-[rgb(var(--accent))]' : 'w-2 bg-[rgb(var(--border))] hover:bg-[rgb(var(--text-secondary))]/50'}`}
+                        />
+                    ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <button onClick={handlePrev} aria-label="Previous project"
-            className={`absolute left-0 sm:left-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${navBtnClass}`}>
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          <button onClick={handleNext} aria-label="Next project"
-            className={`absolute right-0 sm:right-2 top-[42%] -translate-y-1/2 z-30 p-2.5 sm:p-3.5 rounded-full backdrop-blur-md border shadow-xl transition-all duration-200 hover:scale-110 active:scale-95 ${navBtnClass}`}>
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-
-          {projects.length > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '2rem' }}>
-              {projects.map((_, i) => (
-                <button key={i} onClick={() => handleDot(i)} aria-label={`Go to project ${i + 1}`}
-                  style={{
-                    height: '6px', borderRadius: '9999px',
-                    width: i === activeIndex ? '2rem' : '0.5rem',
-                    background: i === activeIndex
-                      ? `rgb(var(--accent))`
-                      : isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
-                    border: 'none', cursor: 'pointer',
-                    transition: 'all 0.4s cubic-bezier(0.22,1,0.36,1)',
-                  }}
-                />
-              ))}
-            </div>
-          )}
+            )}
         </div>
       </section>
     </>

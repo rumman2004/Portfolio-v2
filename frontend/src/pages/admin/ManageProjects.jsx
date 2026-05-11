@@ -346,7 +346,7 @@ const ManageProjects = () => {
                                     <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                                         <img
-                                            src={project.image.url}
+                                            src={project.image?.url}
                                             alt={project.title}
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />

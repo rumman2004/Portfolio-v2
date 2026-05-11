@@ -46,9 +46,11 @@ const Dashboard = () => {
           certificatesAPI.getAll(), contactsAPI.getStats(), contactsAPI.getAll()
         ]);
         setStats({
-          projects: pR.data.count, skills: sR.data.count,
-          experiences: eR.data.count, certificates: cR.data.count,
-          contacts: csR.data.data
+          projects: pR.data.count || pR.data.data?.length || 0, 
+          skills: sR.data.count || sR.data.data?.length || 0,
+          experiences: eR.data.count || eR.data.data?.length || 0, 
+          certificates: cR.data.count || cR.data.data?.length || 0,
+          contacts: csR.data.data || { total: 0, unread: 0, replied: 0 }
         });
         setRecentContacts(conR.data.data.slice(0, 4));
       } catch (e) { console.error(e); }
@@ -220,7 +222,7 @@ const Dashboard = () => {
                         }
                       `}>
                         <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>
-                          {contact.name?.charAt(0).toUpperCase()}
+                          {contact.name ? contact.name.charAt(0).toUpperCase() : '?'}
                         </span>
                       </div>
 
@@ -250,10 +252,12 @@ const Dashboard = () => {
                         <Clock className="w-3 h-3" />
                         {new Date(contact.createdAt).toLocaleDateString()}
                       </div>
-                      <Button variant="outline" size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        Reply
-                      </Button>
+                      <Link to="/admin/contacts">
+                        <Button variant="outline" size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          Reply
+                        </Button>
+                      </Link>
                     </div>
                   </GlassCard>
                 </div>
