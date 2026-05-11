@@ -89,7 +89,7 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
                                     <Shield className="w-5 h-5 text-white" />
                                 </div>
                                 <h2 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                                    Admin<span className="text-[rgb(var(--accent))]">Panel</span>
+                                    Admin <span className="text-[rgb(var(--accent))]">Panel</span>
                                 </h2>
                             </div>
                             <button
@@ -99,22 +99,6 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
                             >
                                 <X className="w-5 h-5" />
                             </button>
-                        </div>
-
-                        {/* User Profile Summary */}
-                        <div className={`p-4 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-black/20 border-white/5' : 'bg-white/50 border-white/40'
-                            }`}>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-md">
-                                {admin?.name?.charAt(0).toUpperCase() || 'A'}
-                            </div>
-                            <div className="min-w-0">
-                                <p className={`text-sm font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                                    {admin?.name || 'Admin'}
-                                </p>
-                                <p className="text-xs text-[rgb(var(--text-secondary))] truncate">
-                                    {admin?.email}
-                                </p>
-                            </div>
                         </div>
                     </div>
 
